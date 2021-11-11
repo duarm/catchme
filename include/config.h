@@ -1,7 +1,7 @@
 // smpd (sakura's music player daemon) conf
 
 #define VERSION "0.8.0"
-#define SOCKET_FILE "/home/sakura/.config/smpd/socket"
+#define SOCKET_FILE "/home/sakura/.config/smpd/smpd-socket"
 #define MUSIC_DIR "/mnt/files/music/"
 #define MUSIC_CACHE_DIR "/home/sakura/.config/smpd/music_cache"
 #define SOCKETBUF_SIZE 512

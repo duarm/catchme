@@ -18,10 +18,21 @@ char databuff[DATABUF_SIZE];
 
 static void usage(void)
 {
-	fputs("usage: smpd [-bfiv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
-	      "             [-nb color] [-nf color] [-sb color] [-sf color] [-w "
-	      "windowid]\n",
-	      stderr);
+	puts("usage: smpd [-d] [-vl [-h] COMMAND"
+	     "COMMAND"
+	     "	seek"
+	     "	vol/volume"
+	     "	play"
+	     "	pause"
+	     "	toggle"
+	     "	status"
+	     "	current/curr"
+	     "	prev"
+	     "	next"
+	     "	idle"
+	     "	playlist"
+	     "	update"
+	     "\n");
 	exit(EXIT_SUCCESS);
 }
 
@@ -68,6 +79,7 @@ static int send_to_socket(char *msg)
 void daemonize(void)
 {
 	system(SERVER_COMMAND);
+	unlink(SOCKET_FILE);
 }
 
 bool get_metadata(const char *name, char *result)
@@ -225,6 +237,10 @@ void smpd_seek(char *seek)
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
 	}
+}
+
+void smpd_idle(void)
+{
 }
 
 void smpd_playlist(void)
@@ -405,23 +421,23 @@ int main(int argc, char *argv[])
 			next();
 		else if (!strcmp(argv[i], "prev"))
 			prev();
-		else if (!strcmp(argv[i], "idle")) {
-			//todo
-		} else if (!strcmp(argv[i], "shuff") ||
-			   !strcmp(argv[i], "shuffle"))
+		else if (!strcmp(argv[i], "idle"))
+			smpd_idle(); //todo
+		else if (!strcmp(argv[i], "shuff") ||
+			 !strcmp(argv[i], "shuffle"))
 			shuffle();
 		else if (!strcmp(argv[i], "curr") ||
-			 !strcmp(argv[i], "current")) {
+			 !strcmp(argv[i], "current"))
 			smpd_current();
-		} else if (!strcmp(argv[i], "status")) {
+		else if (!strcmp(argv[i], "status"))
 			smpd_status();
-		} else if (!strcmp(argv[i], "playlist")) {
-			smpd_playlist();
-		} else if (!strcmp(argv[i], "update")) {
-			smpd_update();
-		} else if (!strcmp(argv[i], "seek"))
-			smpd_seek(argv[++i]);
+		else if (!strcmp(argv[i], "playlist"))
+			smpd_playlist(); //todo
+		else if (!strcmp(argv[i], "update"))
+			smpd_update(); //todo
 		// one arg commands
+		else if (!strcmp(argv[i], "seek"))
+			smpd_seek(argv[++i]);
 		else if (!strcmp(argv[i], "vol") ||
 			 !strcmp(argv[i], "volume")) {
 			volume(argv[++i]);
@@ -433,7 +449,6 @@ int main(int argc, char *argv[])
 		close(fd);
 	}
 
-	unlink(SOCKET_FILE);
 	return EXIT_SUCCESS;
 }
 

@@ -1,5 +1,6 @@
 compile_commands.json
 
+.cache/
 obj/
 out/
 *.d
