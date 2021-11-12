@@ -9,8 +9,8 @@ but it might be possible to communicate with other servers.
 
 ## Features
 
-[ ] playlists
-[X] cli
+- [ ] playlists
+- [X] cli
 
 ## Build & Install
 
@@ -31,58 +31,59 @@ You'll need to start your music server first.
 
 ### MPV
 
-first, edit the SOCKET_FILE macro in config.h to point to the socket file. On our case, it will be located
+First, edit the SOCKET_FILE macro in config.h to point to the socket file. On our case, it will be located
 at $XDG_CONFIG_HOME/catchme/catchme-socket
 
 ```c
 // catchme/include/config.h
+
 // dont forget the quotes
 #define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"
 ```
 
-recompile and install.
+Recompile and install.
 
-Now, create a script to start the mpv server.
+Now, create a script to start the mpv server and make it executable.
+The important option is the --input-ipc-server, the rest is up to you, some recommended ones:
 
 ```shell
-#!/bin/sh
 # ./start_catchme
+#!/bin/sh
 
 # you can add your own options here
-exec mpv --loop-playlist=inf --idle=yes \
-        --input-ipc-server=$HOME/.config/catchme/catchme-socket \
+exec mpv --really-quiet --video=no --loop-playlist=inf --idle=yes \
+        --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
         /path/to/my/musics
 ```
-
-don't forget to make it executable.
-
-you can customize this script to reflect the start state of your mpv server.
+You can customize this script to reflect the start state of your mpv server.
 
 ```shell
-#!/bin/sh
 # ./start_catchme
+#!/bin/sh
 
 # mpv now will be paused on startup
-exec mpv --pause --loop-playlist=inf --idle=yes \
-        --input-ipc-server=$HOME/.config/catchme/catchme-socket \
+exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
+        --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
         /path/to/my/musics
 ```
 
 ```shell
-#!/bin/sh
 # ./start_catchme
+#!/bin/sh
 
 # mpv will now start playing the last playlist you played
-[ -e "$XDG_CONFIG_HOME/catchme/music_path_cache" ] && musics="--playlist=$XDG_CONFIG_HOME/catchme/music_path_cache" || musics="path/to/my/musics"
+[ -e "$XDG_CONFIG_HOME/catchme/music_path_cache" ] && \
+	musics="--playlist=$XDG_CONFIG_HOME/catchme/music_path_cache" || \
+	musics="path/to/my/musics"
 
-exec mpv --pause --loop-playlist=inf --idle=yes \
-        --input-ipc-server=$HOME/.config/catchme/catchme-socket \
+exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
+        --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
 	$musics
 ```
 
-execute this script on your start script.
+Execute this file on your start script.
 
-you can now communicate with your mpv server through catchme.
+You can now communicate with your mpv server through catchme.
 
 ```shell
 $ catchme next
