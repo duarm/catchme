@@ -1,9 +1,10 @@
-#include "smpd.h"
+#include "catchme.h"
+#include "util.h"
 #include "config.h"
 #include <json-c/json_object.h>
 #include <json-c/json_types.h>
 #include <json-c/json.h>
-#include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,32 +13,38 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-int fd;
+int fd = -1;
+pid_t pid;
 char cmdbuff[SOCKETBUF_SIZE];
 char databuff[DATABUF_SIZE];
 
 static void usage(void)
 {
-	puts("usage: smpd [-d] [-vl [-h] COMMAND"
-	     "COMMAND"
-	     "	seek"
-	     "	vol/volume"
-	     "	play"
-	     "	pause"
-	     "	toggle"
-	     "	status"
-	     "	current/curr"
-	     "	prev"
-	     "	next"
-	     "	idle"
-	     "	playlist"
-	     "	update"
+	puts("usage: catchme [-vl [-h] COMMAND\n"
+	     "COMMAND\n"
+	     "	seek\n"
+	     "	vol/volume\n"
+	     "	play\n"
+	     "	play-id\n"
+	     "	pause\n"
+	     "	toggle\n"
+	     "	status\n"
+	     "	current/curr\n"
+	     "	prev\n"
+	     "	next\n"
+	     "	idle\n"
+	     "	playlist\n"
+	     "	update\n"
 	     "\n");
 	exit(EXIT_SUCCESS);
 }
 
 static void open_socket(void)
 {
+	//socket already open
+	if (fd != -1)
+		return;
+
 	int len;
 	struct sockaddr_un remote;
 
@@ -76,11 +83,17 @@ static int send_to_socket(char *msg)
 	}
 }
 
-void daemonize(void)
+void sig_int_handler(int signum)
 {
-	system(SERVER_COMMAND);
+	printf("sigint received, ending program.\n");
 	unlink(SOCKET_FILE);
+	exit(EXIT_SUCCESS);
 }
+
+/* void sig_kill_handler(int signum) */
+/* { */
+/* 	kill(pid, SIGINT); */
+/* } */
 
 bool get_metadata(const char *name, char *result)
 {
@@ -91,6 +104,7 @@ bool get_metadata(const char *name, char *result)
 		const char *str = json_object_get_string(
 			json_object_object_get(res, "data"));
 		strncpy(result, str, strlen(str));
+		result[strlen(str)] = '\0';
 		json_object_put(res);
 		return true;
 	}
@@ -113,9 +127,7 @@ bool get_property_int(const char *property, int *result)
 bool get_property_string(const char *property, char *result)
 {
 	sprintf(cmdbuff, GET_PROPERTY_MSG, property);
-	printf("sending %s\n", cmdbuff);
 	if (send_to_socket(cmdbuff)) {
-		printf("res: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *str = json_object_get_string(
 			json_object_object_get(res, "data"));
@@ -153,7 +165,7 @@ bool get_property_bool(const char *property, bool *result)
 	return false;
 }
 
-void toggle(void)
+void catchme_toggle(void)
 {
 	open_socket();
 	bool pause;
@@ -167,7 +179,7 @@ void toggle(void)
 	}
 }
 
-void play(void)
+void catchme_play(void)
 {
 	open_socket();
 	sprintf(cmdbuff, PLAY_MSG);
@@ -179,7 +191,7 @@ void play(void)
 	}
 }
 
-void smpd_seek(char *seek)
+void catchme_seek(char *seek)
 {
 	double time = 0.0;
 
@@ -216,7 +228,6 @@ void smpd_seek(char *seek)
 
 		sprintf(cmdbuff, SEEK_PERCENTAGE_MSG, time);
 		if (send_to_socket(cmdbuff)) {
-			printf("res: %s\n", cmdbuff);
 			struct json_object *res = json_tokener_parse(cmdbuff);
 			/* json_object_get_string(json_object_object_get(res, "error")); */
 			json_object_put(res);
@@ -232,29 +243,97 @@ void smpd_seek(char *seek)
 
 	sprintf(cmdbuff, SEEK_MSG, time);
 	if (send_to_socket(cmdbuff)) {
-		printf("res: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
 	}
 }
 
-void smpd_idle(void)
+void catchme_idle(void)
 {
 }
 
-void smpd_playlist(void)
+void catchme_playlist(void)
 {
+	int playlist_len;
+	get_property_int("playlist-count", &playlist_len);
+
+	// we open with 'w' to clear it, then with reopen with 'a+' to append
+	FILE *fp = fopen(MUSIC_PATHS_CACHE, "w");
+	FILE *fn = fopen(MUSIC_NAMES_CACHE, "w");
+	if (fp == NULL)
+		die("error opening " MUSIC_PATHS_CACHE);
+	if (fn == NULL)
+		die("error opening " MUSIC_NAMES_CACHE);
+
+	freopen(MUSIC_PATHS_CACHE, "a+", fp);
+	freopen(MUSIC_NAMES_CACHE, "a+", fn);
+
+	for (int i = 0; i < playlist_len; i++) {
+		sprintf(cmdbuff, GET_FILENAME_MSG, i);
+		if (send_to_socket(cmdbuff)) {
+			struct json_object *res = json_tokener_parse(cmdbuff);
+			const char *str = json_object_get_string(
+				json_object_object_get(res, "data"));
+			printf("%s\n", str);
+			fprintf(fp, "%s\n", str);
+			char *bname = basename(str);
+			fprintf(fn, "%s\n", bname);
+			json_object_put(res);
+			free(bname);
+		}
+	}
+	fclose(fp);
+	fclose(fn);
 }
 
-void smpd_update(void)
-{
-}
-
-void smpd_status(void)
+void catchme_play_id(int id)
 {
 	open_socket();
 
+	sprintf(cmdbuff, SET_PLAYING_MSG, id);
+	if (send_to_socket(cmdbuff)) {
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		json_object_put(res);
+	}
+}
+
+void catchme_update(void)
+{
+	int playlist_len;
+	get_property_int("playlist-count", &playlist_len);
+
+	// we open with 'w' to clear it, then with reopen with 'a+' to append
+	FILE *fp = fopen(MUSIC_PATHS_CACHE, "w");
+	FILE *fn = fopen(MUSIC_NAMES_CACHE, "w");
+	if (fp == NULL)
+		die("error opening " MUSIC_PATHS_CACHE);
+	if (fn == NULL)
+		die("error opening " MUSIC_NAMES_CACHE);
+
+	freopen(MUSIC_PATHS_CACHE, "a+", fp);
+	freopen(MUSIC_NAMES_CACHE, "a+", fn);
+
+	for (int i = 0; i < playlist_len; i++) {
+		sprintf(cmdbuff, GET_FILENAME_MSG, i);
+		if (send_to_socket(cmdbuff)) {
+			struct json_object *res = json_tokener_parse(cmdbuff);
+			const char *str = json_object_get_string(
+				json_object_object_get(res, "data"));
+			fprintf(fp, "%s\n", str);
+			char *bname = basename(str);
+			fprintf(fn, "%s\n", bname);
+			json_object_put(res);
+			free(bname);
+		}
+	}
+	fclose(fp);
+	fclose(fn);
+}
+
+void catchme_status(void)
+{
 	get_metadata("artist", databuff);
 	char artist[strlen(databuff)];
 	strcpy(artist, databuff);
@@ -286,7 +365,12 @@ void smpd_status(void)
 	       0.0, 0.0, percent_pos, 0.0, vol, 0, 0, 0);
 }
 
-void smpd_current(void)
+void print_format(void)
+{
+	//todo
+}
+
+void catchme_current(void)
 {
 	open_socket();
 
@@ -301,7 +385,7 @@ void smpd_current(void)
 	printf("%s - %s", artist, title);
 }
 
-void smpd_pause(void)
+void catchme_pause(void)
 {
 	open_socket();
 
@@ -313,7 +397,7 @@ void smpd_pause(void)
 	}
 }
 
-void prev(void)
+void catchme_prev(void)
 {
 	open_socket();
 
@@ -331,7 +415,7 @@ void prev(void)
 	}
 }
 
-void next(void)
+void catchme_next(void)
 {
 	open_socket();
 
@@ -346,7 +430,7 @@ void next(void)
 	}
 }
 
-void volume(char *vol)
+void catchme_volume(char *vol)
 {
 	int volume;
 
@@ -380,22 +464,21 @@ void volume(char *vol)
 
 	sprintf(cmdbuff, VOLUME_MSG, volume);
 	if (send_to_socket(cmdbuff)) {
-		printf("res: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
 	}
 }
 
-void shuffle(void)
+void catchme_shuffle(void)
 {
 	open_socket();
 
 	sprintf(cmdbuff, SHUFFLE_PLAYLIST_MSG);
 	if (send_to_socket(cmdbuff)) {
-		printf("res: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
+		catchme_update();
 		json_object_put(res);
 	}
 }
@@ -405,42 +488,48 @@ int main(int argc, char *argv[])
 	for (int i = 1; i < argc; i++) {
 		/* these options take no arguments */
 		if (!strcmp(argv[i], "-v")) { /* prints version information */
-			puts("smpd " VERSION);
+			puts("catchme " VERSION);
 			exit(EXIT_SUCCESS);
 		} else if (!strcmp(argv[i], "-h"))
 			usage();
-		else if (!strcmp(argv[i], "-d"))
-			daemonize();
 		else if (!strcmp(argv[i], "play"))
-			play();
+			catchme_play();
 		else if (!strcmp(argv[i], "pause"))
-			pause();
+			catchme_pause();
 		else if (!strcmp(argv[i], "toggle"))
-			toggle();
+			catchme_toggle();
 		else if (!strcmp(argv[i], "next"))
-			next();
+			catchme_next();
 		else if (!strcmp(argv[i], "prev"))
-			prev();
+			catchme_prev();
 		else if (!strcmp(argv[i], "idle"))
-			smpd_idle(); //todo
+			catchme_idle(); //todo
 		else if (!strcmp(argv[i], "shuff") ||
 			 !strcmp(argv[i], "shuffle"))
-			shuffle();
+			catchme_shuffle();
 		else if (!strcmp(argv[i], "curr") ||
 			 !strcmp(argv[i], "current"))
-			smpd_current();
-		else if (!strcmp(argv[i], "status"))
-			smpd_status();
-		else if (!strcmp(argv[i], "playlist"))
-			smpd_playlist(); //todo
-		else if (!strcmp(argv[i], "update"))
-			smpd_update(); //todo
+			catchme_current();
+		else if (!strcmp(argv[i], "status")){
+			open_socket();
+			catchme_status();
+		}
+		else if (!strcmp(argv[i], "playlist")){
+			open_socket();
+			catchme_playlist();
+		}
+		else if (!strcmp(argv[i], "update")) {
+			open_socket();
+			catchme_update();
+		}
 		// one arg commands
 		else if (!strcmp(argv[i], "seek"))
-			smpd_seek(argv[++i]);
+			catchme_seek(argv[++i]);
 		else if (!strcmp(argv[i], "vol") ||
 			 !strcmp(argv[i], "volume")) {
-			volume(argv[++i]);
+			catchme_volume(argv[++i]);
+		} else if (!strcmp(argv[i], "play-id")) {
+			catchme_play_id(atoi(argv[++i]));
 		} else
 			usage();
 	}

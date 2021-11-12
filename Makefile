@@ -3,7 +3,7 @@
 .PHONY: all clean install uninstall
 
 # CC = tcc
-PROJ_NAME = smpd
+PROJ_NAME = catchme
 PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
 OUT_DIR := out
@@ -99,5 +99,6 @@ uninstall:
 
 clean:
 	rm -rv $(OUT_DIR) $(OBJ_DIR)
+	rm compile_commands.json
 
 -include $(OBJ:.o=.d)

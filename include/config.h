@@ -1,15 +1,12 @@
-// smpd (sakura's music player daemon) conf
+// catchme conf
 
 #define VERSION "0.8.0"
-#define SOCKET_FILE "/home/sakura/.config/smpd/smpd-socket"
+#define SOCKET_FILE "/home/sakura/.config/catchme/catchme-socket"
 #define MUSIC_DIR "/mnt/files/music/"
-#define MUSIC_CACHE_DIR "/home/sakura/.config/smpd/music_cache"
+#define MUSIC_PATHS_CACHE "/home/sakura/.config/catchme/music_path_cache"
+#define MUSIC_NAMES_CACHE "/home/sakura/.config/catchme/music_name_cache"
 #define SOCKETBUF_SIZE 512
 #define DATABUF_SIZE 512
-
-// protocol
-#define SERVER_COMMAND \
-	"mpv --really-quiet --loop-playlist=inf --idle=yes --input-ipc-server="SOCKET_FILE" "MUSIC_DIR
 
 #define PLAY_MSG \
 	"{ \"command\": [\"set_property\", \"pause\", \"no\"] }\n"
@@ -19,8 +16,16 @@
 	"{ \"command\": [\"set_property\", \"pause\", \"%s\"] }\n"
 #define GET_PROPERTY_MSG \
 	"{ \"command\": [\"get_property\", \"%s\"] }\n"
+#define GET_FILENAME_MSG \
+	"{ \"command\": [\"get_property_string\", \"playlist/%d/filename\"] }\n"
+#define GET_ARTIST_MSG \
+	"{ \"command\": [\"get_property_string\", \"playlist/%d/artist\"] }\n"
+#define GET_TITLE_MSG \
+	"{ \"command\": [\"get_property_string\", \"playlist/%d/title\"] }\n"
 #define SHUFFLE_PLAYLIST_MSG \
 	"{ \"command\": [\"playlist-shuffle\" ] }\n"
+#define SET_PLAYING_MSG \
+	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n"
 #define NEXT_PLAYLIST_MSG \
 	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n"
 #define PREV_PLAYLIST_MSG \
