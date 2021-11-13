@@ -10,12 +10,8 @@
 
 #define SET_PLAYING_MSG \
 	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n" // index
-#define PLAY_MSG \
-	"{ \"command\": [\"set_property\", \"pause\", \"no\"] }\n"
-#define PAUSE_MSG \
-	"{ \"command\": [\"set_property\", \"pause\", \"yes\"] }\n"
-#define TOGGLE_MSG \
-	"{ \"command\": [\"set_property\", \"pause\", \"%s\"] }\n" // pause (yes, no)
+#define LOOP_FILE_MSG \
+	"{ \"command\": [\"set_property_string\", \"loop-file\", \"%s\" ] }\n" // loop (inf, no)
 #define SET_PROPERTY_MSG \
 	"{ \"command\": [\"set_property\", \"%s\", \"%s\"] }\n" // property, parameter
 #define GET_PROPERTY_MSG \

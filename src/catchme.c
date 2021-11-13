@@ -28,6 +28,7 @@ static void usage(void)
 	     "	play-index\n"
 	     "	pause\n"
 	     "	mute\n"
+	     "	repeat\n"
 	     "	add\n"
 	     "	remove\n"
 	     "	toggle\n"
@@ -37,8 +38,7 @@ static void usage(void)
 	     "	next\n"
 	     "	idle\n"
 	     "	playlist\n"
-	     "	update\n"
-	     "\n");
+	     "	update");
 	exit(EXIT_SUCCESS);
 }
 
@@ -186,7 +186,16 @@ void catchme_remove(int id)
 
 void catchme_repeat(void)
 {
-	//todo
+	bool loop;
+	get_property_bool("loop-file", &loop);
+
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "loop-file",
+		loop ? "no" : "inf");
+	if (send_to_socket(cmdbuff)) {
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		json_object_put(res);
+	}
 }
 
 void catchme_save_playlist(void)
@@ -213,7 +222,8 @@ void catchme_toggle(void)
 	bool pause;
 	get_property_bool("pause", &pause);
 
-	snprintf(cmdbuff, SOCKETBUF_SIZE, TOGGLE_MSG, pause ? "no" : "yes");
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause",
+		 pause ? "no" : "yes");
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -223,8 +233,7 @@ void catchme_toggle(void)
 
 void catchme_play(void)
 {
-	open_socket();
-	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAY_MSG);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause", "no");
 
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
@@ -333,7 +342,7 @@ void catchme_play_index(int index)
 {
 	open_socket();
 
-	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, id);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, index);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -414,8 +423,6 @@ void print_format(void)
 
 void catchme_current(void)
 {
-	open_socket();
-
 	get_metadata("artist", databuff);
 	char artist[strlen(databuff)];
 	strcpy(artist, databuff);
@@ -429,9 +436,7 @@ void catchme_current(void)
 
 void catchme_pause(void)
 {
-	open_socket();
-
-	snprintf(cmdbuff, SOCKETBUF_SIZE, PAUSE_MSG);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause", "yes");
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -441,8 +446,6 @@ void catchme_pause(void)
 
 void catchme_prev(void)
 {
-	open_socket();
-
 	int current;
 	get_property_int("playlist-pos", &current);
 
@@ -459,8 +462,6 @@ void catchme_prev(void)
 
 void catchme_next(void)
 {
-	open_socket();
-
 	int current;
 	get_property_int("playlist-pos", &current);
 
@@ -532,27 +533,32 @@ int main(int argc, char *argv[])
 			exit(EXIT_SUCCESS);
 		} else if (!strcmp(argv[i], "-h"))
 			usage();
-		else if (!strcmp(argv[i], "play"))
+		else if (!strcmp(argv[i], "play")) {
+			open_socket();
 			catchme_play();
-		else if (!strcmp(argv[i], "pause"))
+		} else if (!strcmp(argv[i], "pause")) {
+			open_socket();
 			catchme_pause();
-		else if (!strcmp(argv[i], "toggle")) {
+		} else if (!strcmp(argv[i], "toggle")) {
 			open_socket();
 			catchme_toggle();
-		} else if (!strcmp(argv[i], "next"))
+		} else if (!strcmp(argv[i], "next")) {
+			open_socket();
 			catchme_next();
-		else if (!strcmp(argv[i], "prev"))
+		} else if (!strcmp(argv[i], "prev")) {
+			open_socket();
 			catchme_prev();
-		else if (!strcmp(argv[i], "idle"))
+		} else if (!strcmp(argv[i], "idle"))
 			catchme_idle(); //todo
 		else if (!strcmp(argv[i], "shuff") ||
 			 !strcmp(argv[i], "shuffle")) {
 			open_socket();
 			catchme_shuffle();
 		} else if (!strcmp(argv[i], "curr") ||
-			   !strcmp(argv[i], "current"))
+			   !strcmp(argv[i], "current")) {
+			open_socket();
 			catchme_current();
-		else if (!strcmp(argv[i], "status")) {
+		} else if (!strcmp(argv[i], "status")) {
 			open_socket();
 			catchme_status();
 		} else if (!strcmp(argv[i], "playlist")) {
@@ -567,6 +573,9 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "update")) {
 			open_socket();
 			catchme_update();
+		} else if (!strcmp(argv[i], "repeat")) {
+			open_socket();
+			catchme_repeat();
 		}
 		// one arg commands
 		else if (!strcmp(argv[i], "remove")) {
