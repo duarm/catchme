@@ -25,7 +25,7 @@ static void usage(void)
 	     "	seek\n"
 	     "	vol/volume\n"
 	     "	play\n"
-	     "	play-id\n"
+	     "	play-index\n"
 	     "	pause\n"
 	     "	mute\n"
 	     "	add\n"
@@ -329,7 +329,7 @@ void catchme_playlist(void)
 	fclose(fn);
 }
 
-void catchme_play_id(int id)
+void catchme_play_index(int index)
 {
 	open_socket();
 
@@ -577,8 +577,8 @@ int main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "vol") ||
 			 !strcmp(argv[i], "volume")) {
 			catchme_volume(argv[++i]);
-		} else if (!strcmp(argv[i], "play-id")) {
-			catchme_play_id(atoi(argv[++i]));
+		} else if (!strcmp(argv[i], "play-index")) {
+			catchme_play_index(atoi(argv[++i]));
 		} else
 			usage();
 	}

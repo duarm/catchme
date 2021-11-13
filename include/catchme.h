@@ -16,7 +16,7 @@ void catchme_play(void);
 void catchme_seek(char *seek);
 void catchme_idle(void);
 void catchme_playlist(void);
-void catchme_play_id(int id);
+void catchme_play_index(int index);
 void catchme_status(void);
 void catchme_current(void);
 void catchme_pause(void);
