@@ -4,7 +4,7 @@ Catch You, Catch me is a cli interface to communicate with the mpv server
 through an unix socket, written in pure and simple c99. I made this because
 mpvc was super slow due to being a shell script.
 The default protocol communicates with mpv and was only tested with mpv.
-I tried to make it as easy as possible to adapt to mpv's ever changing protocol,
+I tried to make it as easy as possible to adapt to mpv's evolving protocol,
 but it might be possible to communicate with other servers.
 
 ## Features

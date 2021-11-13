@@ -27,6 +27,9 @@ static void usage(void)
 	     "	play\n"
 	     "	play-id\n"
 	     "	pause\n"
+	     "	mute\n"
+	     "	add\n"
+	     "	remove\n"
 	     "	toggle\n"
 	     "	status\n"
 	     "	current/curr\n"
@@ -83,21 +86,9 @@ static int send_to_socket(char *msg)
 	}
 }
 
-void sig_int_handler(int signum)
-{
-	printf("sigint received, ending program.\n");
-	unlink(SOCKET_FILE);
-	exit(EXIT_SUCCESS);
-}
-
-/* void sig_kill_handler(int signum) */
-/* { */
-/* 	kill(pid, SIGINT); */
-/* } */
-
 bool get_metadata(const char *name, char *result)
 {
-	sprintf(cmdbuff, METADATA_MSG, name);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, METADATA_MSG, name);
 	if (send_to_socket(cmdbuff)) {
 		/* printf("res: %s\n", cmdbuff); */
 		struct json_object *res = json_tokener_parse(cmdbuff);
@@ -113,7 +104,7 @@ bool get_metadata(const char *name, char *result)
 
 bool get_property_int(const char *property, int *result)
 {
-	sprintf(cmdbuff, GET_PROPERTY_MSG, property);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		*result = json_object_get_int(
@@ -126,7 +117,7 @@ bool get_property_int(const char *property, int *result)
 
 bool get_property_string(const char *property, char *result)
 {
-	sprintf(cmdbuff, GET_PROPERTY_MSG, property);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *str = json_object_get_string(
@@ -140,7 +131,7 @@ bool get_property_string(const char *property, char *result)
 
 bool get_property_double(const char *property, double *result)
 {
-	sprintf(cmdbuff, GET_PROPERTY_MSG, property);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		*result = json_object_get_double(
@@ -153,7 +144,7 @@ bool get_property_double(const char *property, double *result)
 
 bool get_property_bool(const char *property, bool *result)
 {
-	sprintf(cmdbuff, GET_PROPERTY_MSG, property);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		json_bool prop = json_object_get_boolean(
@@ -165,13 +156,43 @@ bool get_property_bool(const char *property, bool *result)
 	return false;
 }
 
+void catchme_move_music(void)
+{
+}
+void catchme_add(void)
+{
+}
+void catchme_remove(void)
+{
+}
+void catchme_repeat(void)
+{
+	//todo
+}
+
+void catchme_save_playlist(void)
+{
+	//todo
+}
+void catchme_mute(void)
+{
+	bool mute;
+	get_property_bool("mute", &mute);
+
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "mute",  mute ? "no" : "yes");
+	if (send_to_socket(cmdbuff)) {
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		json_object_put(res);
+	}
+}
+
 void catchme_toggle(void)
 {
-	open_socket();
 	bool pause;
 	get_property_bool("pause", &pause);
 
-	sprintf(cmdbuff, TOGGLE_MSG, pause ? "no" : "yes");
+	snprintf(cmdbuff, SOCKETBUF_SIZE, TOGGLE_MSG, pause ? "no" : "yes");
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -182,7 +203,7 @@ void catchme_toggle(void)
 void catchme_play(void)
 {
 	open_socket();
-	sprintf(cmdbuff, PLAY_MSG);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAY_MSG);
 
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
@@ -226,7 +247,7 @@ void catchme_seek(char *seek)
 		else if (time < 0)
 			time = 0;
 
-		sprintf(cmdbuff, SEEK_PERCENTAGE_MSG, time);
+		snprintf(cmdbuff, SOCKETBUF_SIZE, SEEK_PERCENTAGE_MSG, time);
 		if (send_to_socket(cmdbuff)) {
 			struct json_object *res = json_tokener_parse(cmdbuff);
 			/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -241,7 +262,7 @@ void catchme_seek(char *seek)
 		time = atof(timebuff);
 	}
 
-	sprintf(cmdbuff, SEEK_MSG, time);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SEEK_MSG, time);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -270,7 +291,7 @@ void catchme_playlist(void)
 	freopen(MUSIC_NAMES_CACHE, "a+", fn);
 
 	for (int i = 0; i < playlist_len; i++) {
-		sprintf(cmdbuff, GET_FILENAME_MSG, i);
+		snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, i);
 		if (send_to_socket(cmdbuff)) {
 			struct json_object *res = json_tokener_parse(cmdbuff);
 			const char *str = json_object_get_string(
@@ -291,7 +312,7 @@ void catchme_play_id(int id)
 {
 	open_socket();
 
-	sprintf(cmdbuff, SET_PLAYING_MSG, id);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, id);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -316,7 +337,7 @@ void catchme_update(void)
 	freopen(MUSIC_NAMES_CACHE, "a+", fn);
 
 	for (int i = 0; i < playlist_len; i++) {
-		sprintf(cmdbuff, GET_FILENAME_MSG, i);
+		snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, i);
 		if (send_to_socket(cmdbuff)) {
 			struct json_object *res = json_tokener_parse(cmdbuff);
 			const char *str = json_object_get_string(
@@ -389,7 +410,7 @@ void catchme_pause(void)
 {
 	open_socket();
 
-	sprintf(cmdbuff, PAUSE_MSG);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, PAUSE_MSG);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -407,7 +428,7 @@ void catchme_prev(void)
 	if (current == 0)
 		return;
 
-	sprintf(cmdbuff, PREV_PLAYLIST_MSG, current - 1);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, PREV_PLAYLIST_MSG, current - 1);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -422,7 +443,7 @@ void catchme_next(void)
 	int current;
 	get_property_int("playlist-pos", &current);
 
-	sprintf(cmdbuff, NEXT_PLAYLIST_MSG, current + 1);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, NEXT_PLAYLIST_MSG, current + 1);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -462,7 +483,7 @@ void catchme_volume(char *vol)
 		volume = atoi(volbuff);
 	}
 
-	sprintf(cmdbuff, VOLUME_MSG, volume);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_VOLUME_MSG, volume);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -474,7 +495,7 @@ void catchme_shuffle(void)
 {
 	open_socket();
 
-	sprintf(cmdbuff, SHUFFLE_PLAYLIST_MSG);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -496,9 +517,10 @@ int main(int argc, char *argv[])
 			catchme_play();
 		else if (!strcmp(argv[i], "pause"))
 			catchme_pause();
-		else if (!strcmp(argv[i], "toggle"))
+		else if (!strcmp(argv[i], "toggle")) {
+			open_socket();
 			catchme_toggle();
-		else if (!strcmp(argv[i], "next"))
+		} else if (!strcmp(argv[i], "next"))
 			catchme_next();
 		else if (!strcmp(argv[i], "prev"))
 			catchme_prev();
@@ -510,15 +532,22 @@ int main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "curr") ||
 			 !strcmp(argv[i], "current"))
 			catchme_current();
-		else if (!strcmp(argv[i], "status")){
+		else if (!strcmp(argv[i], "status")) {
 			open_socket();
 			catchme_status();
-		}
-		else if (!strcmp(argv[i], "playlist")){
+		} else if (!strcmp(argv[i], "playlist")) {
 			open_socket();
 			catchme_playlist();
-		}
-		else if (!strcmp(argv[i], "update")) {
+		} else if (!strcmp(argv[i], "mute")) {
+			open_socket();
+			catchme_mute();
+		} else if (!strcmp(argv[i], "add")) {
+			open_socket();
+			catchme_add();
+		} else if (!strcmp(argv[i], "remove")) {
+			open_socket();
+			catchme_remove();
+		} else if (!strcmp(argv[i], "update")) {
 			open_socket();
 			catchme_update();
 		}
