@@ -9,31 +9,31 @@
 #define DATABUF_SIZE 512
 
 #define SET_PLAYING_MSG \
-	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n"
+	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n" // index
 #define PLAY_MSG \
 	"{ \"command\": [\"set_property\", \"pause\", \"no\"] }\n"
 #define PAUSE_MSG \
 	"{ \"command\": [\"set_property\", \"pause\", \"yes\"] }\n"
 #define TOGGLE_MSG \
-	"{ \"command\": [\"set_property\", \"pause\", \"%s\"] }\n"
+	"{ \"command\": [\"set_property\", \"pause\", \"%s\"] }\n" // pause (yes, no)
 #define SET_PROPERTY_MSG \
-	"{ \"command\": [\"set_property\", \"%s\", \"%s\"] }\n"
+	"{ \"command\": [\"set_property\", \"%s\", \"%s\"] }\n" // property, parameter
 #define GET_PROPERTY_MSG \
-	"{ \"command\": [\"get_property\", \"%s\"] }\n"
+	"{ \"command\": [\"get_property\", \"%s\"] }\n" // property
+#define PLAYLIST_APPEND \
+	"{ \"command\": [\"loadfile\", \"%s\", \"append-play\" ] }\n" // filename
+#define PLAYLIST_REMOVE \
+	"{ \"command\": [\"playlist-remove\", \"%d\"] }\n" // index
 #define GET_PROPERTY_STRING_MSG \
-	"{ \"command\": [\"get_property_string\", \"%s\"] }\n"
+	"{ \"command\": [\"get_property_string\", \"%s\"] }\n" // property
 #define GET_PLAYLIST_FILENAME_MSG \
-	"{ \"command\": [\"get_property_string\", \"playlist/%d/filename\"] }\n"
+	"{ \"command\": [\"get_property_string\", \"playlist/%d/filename\"] }\n" // index
 #define GET_PLAYLIST_ARTIST_MSG \
-	"{ \"command\": [\"get_property_string\", \"playlist/%d/artist\"] }\n"
+	"{ \"command\": [\"get_property_string\", \"playlist/%d/artist\"] }\n" // index
 #define GET_PLAYLIST_TITLE_MSG \
-	"{ \"command\": [\"get_property_string\", \"playlist/%d/title\"] }\n"
+	"{ \"command\": [\"get_property_string\", \"playlist/%d/title\"] }\n" // index
 #define SHUFFLE_PLAYLIST_MSG \
 	"{ \"command\": [\"playlist-shuffle\" ] }\n"
-#define NEXT_PLAYLIST_MSG \
-	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n"
-#define PREV_PLAYLIST_MSG \
-	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n"
 #define SET_VOLUME_MSG \
 	"{ \"command\": [\"set_property\", \"volume\", %d ] }\n"
 #define SEEK_PERCENTAGE_MSG \

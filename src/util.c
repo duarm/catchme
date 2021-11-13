@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#include <errno.h>
 
 void die(const char *fmt, ...)
 {
@@ -69,6 +71,27 @@ char *str_replace(char *orig, char *rep, char *with)
 	}
 	strcpy(tmp, orig);
 	return result;
+}
+
+/* msleep(): Sleep for the requested number of milliseconds. */
+int msleep(long msec)
+{
+	struct timespec ts;
+	int res;
+
+	if (msec < 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	ts.tv_sec = msec / 1000;
+	ts.tv_nsec = (msec % 1000) * 1000000;
+
+	do {
+		res = nanosleep(&ts, &ts);
+	} while (res && errno == EINTR);
+
+	return res;
 }
 
 char *basename(char const *path)
