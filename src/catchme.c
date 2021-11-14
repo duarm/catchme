@@ -36,7 +36,8 @@ static void usage(void)
 	     "	current/curr\n"
 	     "	prev\n"
 	     "	next\n"
-	     "	idle\n"
+	     "	clear\n"
+	     "	idle - TODO\n"
 	     "	playlist\n"
 	     "	update");
 	exit(EXIT_SUCCESS);
@@ -156,6 +157,18 @@ bool get_property_bool(const char *property, bool *result)
 	return false;
 }
 
+void catchme_playlist_clear(void)
+{
+	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_CLEAR);
+	if (send_to_socket(cmdbuff)) {
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		printf("%s\n", cmdbuff);
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		catchme_update();
+		json_object_put(res);
+	}
+}
+
 void catchme_move_music(void)
 {
 }
@@ -190,7 +203,7 @@ void catchme_repeat(void)
 	get_property_bool("loop-file", &loop);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "loop-file",
-		loop ? "no" : "inf");
+		 loop ? "no" : "inf");
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -573,7 +586,10 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "update")) {
 			open_socket();
 			catchme_update();
-		} else if (!strcmp(argv[i], "repeat")) {
+		} else if (!strcmp(argv[i], "clear")) {
+			open_socket();
+			catchme_playlist_clear();
+		}else if (!strcmp(argv[i], "repeat")) {
 			open_socket();
 			catchme_repeat();
 		}

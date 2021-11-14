@@ -18,6 +18,8 @@
 	"{ \"command\": [\"get_property\", \"%s\"] }\n" // property
 #define PLAYLIST_APPEND \
 	"{ \"command\": [\"loadfile\", \"%s\", \"append-play\" ] }\n" // filename
+#define PLAYLIST_CLEAR \
+	"{ \"command\": [\"playlist-clear\"] }\n"
 #define PLAYLIST_REMOVE \
 	"{ \"command\": [\"playlist-remove\", \"%d\"] }\n" // index
 #define GET_PROPERTY_STRING_MSG \
