@@ -58,7 +58,7 @@ static void open_socket(void)
 	}
 
 	remote.sun_family = AF_UNIX;
-	strcpy(remote.sun_path, SOCKET_FILE);
+	strcpy(remote.sun_path, socket_path);
 	len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 	if (connect(fd, (struct sockaddr *)&remote, len) == -1) {
 		perror("connect");
@@ -173,8 +173,15 @@ void catchme_move_music(void)
 {
 }
 
-void catchme_add(void)
+void catchme_add(char *path)
 {
+	/* snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG); */
+	/* if (send_to_socket(cmdbuff)) { */
+	/* 	struct json_object *res = json_tokener_parse(cmdbuff); */
+	/* 	/1* json_object_get_string(json_object_object_get(res, "error")); *1/ */
+	/* 	catchme_update(); */
+	/* 	json_object_put(res); */
+	/* } */
 }
 
 void catchme_remove(int id)
@@ -582,19 +589,23 @@ int main(int argc, char *argv[])
 			catchme_mute();
 		} else if (!strcmp(argv[i], "add")) {
 			open_socket();
-			catchme_add();
+			catchme_add(argv[++i]);
 		} else if (!strcmp(argv[i], "update")) {
 			open_socket();
 			catchme_update();
 		} else if (!strcmp(argv[i], "clear")) {
 			open_socket();
 			catchme_playlist_clear();
-		}else if (!strcmp(argv[i], "repeat")) {
+		} else if (!strcmp(argv[i], "repeat")) {
 			open_socket();
 			catchme_repeat();
 		}
 		// one arg commands
-		else if (!strcmp(argv[i], "remove")) {
+		else if (!strcmp(argv[i], "-s")) {
+			//socket path
+			strncpy(socket_path, argv[++i], MAX_PATH_SIZE);
+			socket_path[strlen(socket_path)] = '\0';
+		} else if (!strcmp(argv[i], "remove")) {
 			open_socket();
 			catchme_remove(atoi(argv[++i]));
 		} else if (!strcmp(argv[i], "seek"))
