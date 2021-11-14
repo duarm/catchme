@@ -9,6 +9,7 @@ bool get_property_string(const char *property, char *result);
 bool get_property_double(const char *property, double *result);
 bool get_property_int(const char *property, int *result);
 void catchme_update(void);
+void catchme_add(char *path);
 void catchme_remove(int id);
 void catchme_mute(void);
 void catchme_toggle(void);

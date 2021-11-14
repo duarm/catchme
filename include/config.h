@@ -18,6 +18,8 @@ char socket_path[MAX_PATH_SIZE] = "/home/sakura/.config/catchme/catchme-socket";
 	"{ \"command\": [\"set_property\", \"%s\", \"%s\"] }\n" // property, parameter
 #define GET_PROPERTY_MSG \
 	"{ \"command\": [\"get_property\", \"%s\"] }\n" // property
+#define PLAYLIST_LOAD \
+	"{ \"command\": [\"loadlist\", \"%s\" ] }\n" // file
 #define PLAYLIST_APPEND \
 	"{ \"command\": [\"loadfile\", \"%s\", \"append\" ] }\n" // file
 #define PLAYLIST_CLEAR \

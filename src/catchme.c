@@ -16,7 +16,6 @@
 int fd = -1;
 pid_t pid;
 char cmdbuff[SOCKETBUF_SIZE];
-char databuff[DATABUF_SIZE];
 
 static void usage(void)
 {
@@ -58,7 +57,7 @@ static void open_socket(void)
 	}
 
 	remote.sun_family = AF_UNIX;
-	strcpy(remote.sun_path, socket_path);
+	strncpy(remote.sun_path, socket_path, 108);
 	len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 	if (connect(fd, (struct sockaddr *)&remote, len) == -1) {
 		perror("connect");
@@ -87,18 +86,26 @@ static int send_to_socket(char *msg)
 	}
 }
 
+static void get_filename(int index, char* result)
+{
+
+}
+
 bool get_metadata(const char *name, char *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, METADATA_MSG, name);
 	if (send_to_socket(cmdbuff)) {
-		/* printf("res: %s\n", cmdbuff); */
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		const char *str = json_object_get_string(
-			json_object_object_get(res, "data"));
-		strncpy(result, str, strlen(str));
-		result[strlen(str)] = '\0';
+		const char *error = json_object_get_string(
+			json_object_object_get(res, "error"));
+		if (!strcmp(error, "success")) {
+			const char *str = json_object_get_string(
+				json_object_object_get(res, "data"));
+			strncpy(result, str, DATABUF_SIZE);
+			result[strlen(str)] = '\0';
+			return true;
+		}
 		json_object_put(res);
-		return true;
 	}
 	return false;
 }
@@ -118,7 +125,7 @@ bool get_property_int(const char *property, int *result)
 
 bool get_property_string(const char *property, char *result)
 {
-	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_STRING_MSG, property);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *str = json_object_get_string(
@@ -162,26 +169,33 @@ void catchme_playlist_clear(void)
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_CLEAR);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		printf("%s\n", cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		catchme_update();
 		json_object_put(res);
 	}
 }
 
-void catchme_move_music(void)
-{
-}
-
 void catchme_add(char *path)
 {
-	/* snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG); */
-	/* if (send_to_socket(cmdbuff)) { */
-	/* 	struct json_object *res = json_tokener_parse(cmdbuff); */
-	/* 	/1* json_object_get_string(json_object_object_get(res, "error")); *1/ */
-	/* 	catchme_update(); */
-	/* 	json_object_put(res); */
-	/* } */
+	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_APPEND, path);
+	if (send_to_socket(cmdbuff)) {
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		catchme_update();
+		json_object_put(res);
+	}
+}
+
+void catchme_play_playlist(char *path)
+{
+	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
+	if (send_to_socket(cmdbuff)) {
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		msleep(500);
+		catchme_update();
+		json_object_put(res);
+	}
 }
 
 void catchme_remove(int id)
@@ -360,6 +374,7 @@ void catchme_play_index(int index)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, index);
 	if (send_to_socket(cmdbuff)) {
+		printf("res: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
@@ -401,13 +416,14 @@ void catchme_update(void)
 
 void catchme_status(void)
 {
-	get_metadata("artist", databuff);
-	char artist[strlen(databuff)];
-	strcpy(artist, databuff);
+	char artist[DATABUF_SIZE];
+	char title[DATABUF_SIZE];
 
-	get_metadata("title", databuff);
-	char title[strlen(databuff)];
-	strcpy(title, databuff);
+	if (!get_metadata("artist", artist))
+		strncpy(artist, "N/A", DATABUF_SIZE);
+
+	if (!get_metadata("title", title))
+		strncpy(title, "N/A", DATABUF_SIZE);
 
 	bool status;
 	get_property_bool("pause", &status);
@@ -439,15 +455,19 @@ void print_format(void)
 
 void catchme_current(void)
 {
-	get_metadata("artist", databuff);
-	char artist[strlen(databuff)];
-	strcpy(artist, databuff);
+	char artist[DATABUF_SIZE];
+	char title[DATABUF_SIZE];
 
-	get_metadata("title", databuff);
-	char title[strlen(databuff)];
-	strcpy(title, databuff);
+	if (get_metadata("artist", artist) && get_metadata("title", title)) {
+		printf("%s - %s", artist, title);
+	}
+	else
+	{
+		printf("getting path\n");
+		get_property_string("filename", cmdbuff);
+		printf("%s", cmdbuff);
+	}
 
-	printf("%s - %s", artist, title);
 }
 
 void catchme_pause(void)
@@ -599,6 +619,9 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "playlist")) {
 			open_socket();
 			catchme_playlist();
+		} else if (!strcmp(argv[i], "playlist-play")) {
+			open_socket();
+			catchme_play_playlist(argv[++i]);
 		} else if (!strcmp(argv[i], "idle")) {
 			/* open_socket(); */
 			/* catchme_idle(); //todo */
