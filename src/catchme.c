@@ -266,8 +266,6 @@ void catchme_seek(char *seek)
 {
 	double time = 0.0;
 
-	open_socket();
-
 	// + or - prefix for relative, raw value for absolute
 	if (seek[0] == '+') {
 		get_property_double("playback-time", &time);
@@ -360,8 +358,6 @@ void catchme_playlist(void)
 
 void catchme_play_index(int index)
 {
-	open_socket();
-
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, index);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
@@ -497,8 +493,6 @@ void catchme_volume(char *vol)
 {
 	int volume;
 
-	open_socket();
-
 	// + or - prefix for relative, raw value for absolute
 	if (vol[0] == '+') {
 		get_property_int("volume", &volume);
@@ -548,18 +542,7 @@ int main(int argc, char *argv[])
 {
 	for (int i = 1; i < argc; i++) {
 		/* these options take no arguments */
-		if (!strcmp(argv[i], "-v")) { /* prints version information */
-			puts("catchme " VERSION);
-			exit(EXIT_SUCCESS);
-		} else if (!strcmp(argv[i], "-h"))
-			usage();
-		else if (!strcmp(argv[i], "play")) {
-			open_socket();
-			catchme_play();
-		} else if (!strcmp(argv[i], "pause")) {
-			open_socket();
-			catchme_pause();
-		} else if (!strcmp(argv[i], "toggle")) {
+		if (!strcmp(argv[i], "toggle")) {
 			open_socket();
 			catchme_toggle();
 		} else if (!strcmp(argv[i], "next")) {
@@ -568,25 +551,39 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "prev")) {
 			open_socket();
 			catchme_prev();
-		} else if (!strcmp(argv[i], "idle"))
-			catchme_idle(); //todo
-		else if (!strcmp(argv[i], "shuff") ||
-			 !strcmp(argv[i], "shuffle")) {
+		} else if (!strcmp(argv[i], "seek")) {
 			open_socket();
-			catchme_shuffle();
+			catchme_seek(argv[++i]);
+		} else if (!strcmp(argv[i], "vol") ||
+			   !strcmp(argv[i], "volume")) {
+			open_socket();
+			catchme_volume(argv[++i]);
 		} else if (!strcmp(argv[i], "curr") ||
 			   !strcmp(argv[i], "current")) {
 			open_socket();
 			catchme_current();
+		} else if (!strcmp(argv[i], "play")) {
+			open_socket();
+			catchme_play();
+		} else if (!strcmp(argv[i], "pause")) {
+			open_socket();
+			catchme_pause();
+		} else if (!strcmp(argv[i], "shuff") ||
+			   !strcmp(argv[i], "shuffle")) {
+			open_socket();
+			catchme_shuffle();
+		} else if (!strcmp(argv[i], "play-index")) {
+			open_socket();
+			catchme_play_index(atoi(argv[++i]));
 		} else if (!strcmp(argv[i], "status")) {
 			open_socket();
 			catchme_status();
-		} else if (!strcmp(argv[i], "playlist")) {
-			open_socket();
-			catchme_playlist();
 		} else if (!strcmp(argv[i], "mute")) {
 			open_socket();
 			catchme_mute();
+		} else if (!strcmp(argv[i], "remove")) {
+			open_socket();
+			catchme_remove(atoi(argv[++i]));
 		} else if (!strcmp(argv[i], "add")) {
 			open_socket();
 			catchme_add(argv[++i]);
@@ -599,22 +596,20 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "repeat")) {
 			open_socket();
 			catchme_repeat();
-		}
-		// one arg commands
+		} else if (!strcmp(argv[i], "playlist")) {
+			open_socket();
+			catchme_playlist();
+		} else if (!strcmp(argv[i], "idle")) {
+			/* open_socket(); */
+			/* catchme_idle(); //todo */
+		} else if (!strcmp(argv[i], "-h"))
+			usage();
 		else if (!strcmp(argv[i], "-s")) {
-			//socket path
 			strncpy(socket_path, argv[++i], MAX_PATH_SIZE);
 			socket_path[strlen(socket_path)] = '\0';
-		} else if (!strcmp(argv[i], "remove")) {
-			open_socket();
-			catchme_remove(atoi(argv[++i]));
-		} else if (!strcmp(argv[i], "seek"))
-			catchme_seek(argv[++i]);
-		else if (!strcmp(argv[i], "vol") ||
-			 !strcmp(argv[i], "volume")) {
-			catchme_volume(argv[++i]);
-		} else if (!strcmp(argv[i], "play-index")) {
-			catchme_play_index(atoi(argv[++i]));
+		} else if (!strcmp(argv[i], "-v")) {
+			puts("catchme " VERSION);
+			exit(EXIT_SUCCESS);
 		} else
 			usage();
 	}
