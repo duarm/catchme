@@ -1,4 +1,6 @@
-#SAKURA ENGINE
+# CATCHME
+# parts from this Makefile were taken from around the internet.
+# most notably, the OS detection was taken from raylib Makefile.
 
 .PHONY: all clean install uninstall
 
@@ -12,7 +14,7 @@ OBJ_DIR := obj
 INCLUDE_PATHS = -I. -Iinclude
 
 # RELEASE or DEBUG
-BUILD_MODE ?= DEBUG
+BUILD_MODE ?= RELEASE
 # PLATFORM_DESKTOP, PLATFORM_WEB
 PLATFORM ?= PLATFORM_DESKTOP
 
