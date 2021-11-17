@@ -22,23 +22,23 @@ static void usage(void)
 	puts("usage: catchme [-vl [-h] COMMAND\n"
 	     "COMMAND\n"
 	     "	seek\n"
-	     "	vol/volume\n"
-	     "	play\n"
-	     "	play-index\n"
-	     "	pause\n"
-	     "	mute\n"
-	     "	repeat\n"
-	     "	add\n"
-	     "	remove\n"
-	     "	toggle\n"
-	     "	status\n"
-	     "	current/curr\n"
-	     "	prev\n"
-	     "	next\n"
-	     "	clear\n"
+	     "	vol/volume [+/-]VOL\n"
+	     "	play - Unpauses\n"
+	     "	play-index ID - plays the music the the given ID\n"
+	     "	pause - Pauses\n"
+	     "	mute - Toggle mute\n"
+	     "	repeat - Toggle repeat current music\n"
+	     "	add PATH - Apends the music in the given path to the playlist\n"
+	     "	remove ID - Removes the music at the given ID in the playlist\n"
+	     "	toggle - Toggle pause\n"
+	     "	status - Returns a status list of the current music ?REMOVE?\n"
+	     "	current/curr - Returns the name of the current music\n"
+	     "	prev - Plays previous music\n"
+	     "	next - Plays next music\n"
+	     "	clear - Clears the playlist\n"
 	     "	idle - TODO\n"
-	     "	playlist\n"
-	     "	update");
+	     "	playlist - Prints the whole playlist to stdout\n"
+	     "	update - Updates the music_names_cache and music_paths_cache.");
 	exit(EXIT_SUCCESS);
 }
 
@@ -374,7 +374,6 @@ void catchme_play_index(int index)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, index);
 	if (send_to_socket(cmdbuff)) {
-		printf("res: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
@@ -463,7 +462,6 @@ void catchme_current(void)
 	}
 	else
 	{
-		printf("getting path\n");
 		get_property_string("filename", cmdbuff);
 		printf("%s", cmdbuff);
 	}
