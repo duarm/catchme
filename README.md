@@ -10,7 +10,7 @@ but it might be possible to communicate with other servers.
 ## Features
 
 - [ ] playlists
-- [X] cli
+- [X] basic controol (see commands section)
 
 ## Build & Install
 
@@ -38,10 +38,11 @@ at $XDG_CONFIG_HOME/catchme/catchme-socket
 // catchme/include/config.h
 
 // dont forget the quotes
-#define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"
-```
+#define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"```
 
 Recompile and install.
+
+You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
 
 Now, create a script to start the mpv server and make it executable.
 The important option is the --input-ipc-server, the rest is up to you, some recommended ones:
@@ -86,10 +87,50 @@ Execute this file on your start script.
 You can now communicate with your mpv server through catchme.
 
 ```shell
-$ catchme next
 $ catchme toggle
+$ catchme next
 ...
 ```
+
+## Commands
+play - Unpauses
+
+pause - Pauses
+
+toggle - Toggle pause
+
+seek [+/-]TIME - Increments [+], decrements [-] or sets the absolute time of the current music
+
+vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute value of volume
+
+current/curr - Returns the name of the current music
+
+prev - Plays previous music
+
+play-index ID - plays the music the the given ID
+
+playlist - Prints the whole playlist to stdout
+
+playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE (analagous to the --playlist)
+
+mute - Toggle mute
+
+repeat - Toggle repeat current music
+
+add PATH - Apends the music in the given path to the playlist
+
+remove ID - Removes the music at the given ID in the playlist
+
+status - Returns a status list of the current music ?REMOVE?
+
+next - Plays next music
+
+clear - Clears the playlist
+
+idle - TODO
+
+update - Updates the music_names_cache and music_paths_cache
+
 
 ### Protocol
 
