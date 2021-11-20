@@ -4,7 +4,7 @@
 
 .PHONY: all clean install uninstall
 
-# CC = tcc
+CC = musl-gcc
 PROJ_NAME = catchme
 PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
@@ -32,9 +32,9 @@ CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Werror=pointer-a
 # C Pre Processor Flags
 CPPFLAGS := $(INCLUDE_PATHS)
 # -L linker flags
-# LDFLAGS := -L
+LDFLAGS := -L/usr/lib/musl/lib/ -Llib/
 # -l lib flags
-LDLIBS   := -lm -ljson-c
+LDLIBS   := -ljson-c /usr/lib/musl/lib/libm.a /usr/lib/musl/lib/libc.a
 
 EXE := $(OUT_DIR)/$(PROJ_NAME)
 SRC := $(wildcard $(SRC_DIR)/*.c)
