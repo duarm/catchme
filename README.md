@@ -10,7 +10,7 @@ but it might be possible to communicate with other servers.
 ## Features
 
 - [ ] playlists
-- [X] basic controol (see commands section)
+- [X] basic control (see commands section)
 
 ## Build & Install
 
@@ -130,9 +130,3 @@ clear - Clears the playlist
 idle - TODO
 
 update - Updates the music_names_cache and music_paths_cache
-
-
-### Protocol
-
-Each command is a macro in the config.h file. This makes it easier
-to adapt to different protocols or changes to the default one (mpv)
