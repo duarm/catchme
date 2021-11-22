@@ -14,8 +14,6 @@ OBJ_DIR := obj
 
 # RELEASE or DEBUG
 BUILD_MODE ?= RELEASE
-# PLATFORM_DESKTOP, PLATFORM_WEB
-PLATFORM ?= PLATFORM_DESKTOP
 
 # Define compiler flags:
 #  -O1                      defines optimization level
@@ -26,7 +24,6 @@ PLATFORM ?= PLATFORM_DESKTOP
 #  -Wno-missing-braces      ignore invalid warning (GCC bug 53119)
 #  -D_DEFAULT_SOURCE        use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
 #  -Werror=pointer-arith    catch unportable code that does direct arithmetic on void pointers
-##  -fno-strict-aliasing     jar_xm.h does shady stuff (breaks strict aliasing)
 CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Werror=pointer-arith -MD
 # C Pre Processor Flags
 CPPFLAGS := -I. -Iinclude -Iinclude/json-c
@@ -78,7 +75,7 @@ $(EXE): $(OBJ) | $(OUT_DIR)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -D$(PLATFORM) -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OUT_DIR) $(OBJ_DIR):
 	mkdir -p $@
@@ -99,7 +96,7 @@ uninstall:
 	# rm -f $(DESTDIR)$(MANPREFIX)/man1/$(PROJ_NAME).1
 
 clean:
-	rm -rv $(OUT_DIR) $(OBJ_DIR)
-	rm compile_commands.json
+	rm -rfv $(OUT_DIR) $(OBJ_DIR)
+	rm -f compile_commands.json
 
 -include $(OBJ:.o=.d)
