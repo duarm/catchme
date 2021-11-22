@@ -117,11 +117,13 @@ mute - Toggle mute
 
 repeat - Toggle repeat current music
 
-add PATH - Apends the music in the given path to the playlist
+add FILE/PATH - Appends the file/file list/path to the current playlist
 
-remove ID - Removes the music at the given ID in the playlist
+remove ID - Removes the music at the given ID from the playlist
 
 status - Returns a status list of the current music ?REMOVE?
+
+format PATTERN - TODO
 
 next - Plays next music
 

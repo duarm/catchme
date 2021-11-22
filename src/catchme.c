@@ -87,11 +87,6 @@ static int send_to_socket(char *msg)
 	}
 }
 
-static void get_filename(int index, char* result)
-{
-
-}
-
 bool get_metadata(const char *name, char *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, METADATA_MSG, name);
@@ -131,7 +126,7 @@ bool get_property_string(const char *property, char *result)
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *str = json_object_get_string(
 			json_object_object_get(res, "data"));
-		strncpy(result, str, strlen(str));
+		strncpy(result, str, DATABUF_SIZE);
 		json_object_put(res);
 		return true;
 	}
@@ -280,30 +275,30 @@ void catchme_play(void)
 void catchme_seek(char *seek)
 {
 	double time = 0.0;
+	int len = strlen(seek);
 
 	// + or - prefix for relative, raw value for absolute
 	if (seek[0] == '+') {
 		get_property_double("playback-time", &time);
-		char timebuff[4];
-		int len = strlen(seek) - 1;
-		memcpy(timebuff, &seek[1], len);
-		timebuff[len + 1] = '\0';
+		char timebuff[5];
+		if (len > 4)
+			return;
+		strncpy(timebuff, &seek[1], len - 1);
 		time += atof(timebuff);
 	} else if (seek[0] == '-') {
 		get_property_double("playback-time", &time);
-		char timebuff[4];
-		int len = strlen(seek) - 1;
-		memcpy(timebuff, &seek[1], len);
-		timebuff[len + 1] = '\0';
+		char timebuff[5];
+		if (len > 4)
+			return;
+		strncpy(timebuff, &seek[1], len - 1);
 		time -= atof(timebuff);
-	} else if (seek[strlen(seek) - 1] == '%') {
-		char timebuff[4];
-		int len = strlen(seek);
-		// len size goes up to the null terminator,
-		// -1 to go to up to the last number
-		memcpy(timebuff, &seek[0], len - 1);
-		timebuff[len - 1] = '\0';
-		time = atof(timebuff);
+	} else if (seek[len - 1] == '%') {
+		char timebuff[5];
+		if (len > 4)
+			return;
+		strncpy(timebuff, &seek[0], len - 1);
+		printf("%s\n", timebuff);
+		time = atoi(timebuff);
 
 		if (time > 100)
 			time = 100;
@@ -318,10 +313,10 @@ void catchme_seek(char *seek)
 		}
 		return;
 	} else {
-		char timebuff[4];
-		int len = strlen(seek) - 1;
-		memcpy(timebuff, &seek[1], len);
-		timebuff[len + 1] = '\0';
+		char timebuff[5];
+		if (len > 4)
+			return;
+		strncpy(timebuff, &seek[1], len - 1);
 		time = atof(timebuff);
 	}
 
@@ -463,8 +458,8 @@ void catchme_current(void)
 	}
 	else
 	{
-		get_property_string("filename", cmdbuff);
-		printf("%s", cmdbuff);
+		get_property_string("filename", title);
+		printf("%s", title);
 	}
 
 }
