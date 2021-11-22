@@ -19,7 +19,7 @@ char cmdbuff[SOCKETBUF_SIZE];
 
 static void usage(void)
 {
-	puts("usage: catchme [-vl [-h] COMMAND\n"
+	puts("usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND\n"
 	     "COMMAND\n"
 	     "	play - Unpauses\n"
 	     "	pause - Pauses\n"
@@ -338,15 +338,15 @@ void catchme_playlist(void)
 	get_property_int("playlist-count", &playlist_len);
 
 	// we open with 'w' to clear it, then with reopen with 'a+' to append
-	FILE *fp = fopen(MUSIC_PATHS_CACHE, "w");
-	FILE *fn = fopen(MUSIC_NAMES_CACHE, "w");
+	FILE *fp = fopen(music_path_cache, "w");
+	FILE *fn = fopen(music_names_cache, "w");
 	if (fp == NULL)
-		die("error opening " MUSIC_PATHS_CACHE);
+		die("error opening %s", music_path_cache);
 	if (fn == NULL)
-		die("error opening " MUSIC_NAMES_CACHE);
+		die("error opening %s", music_names_cache);
 
-	freopen(MUSIC_PATHS_CACHE, "a+", fp);
-	freopen(MUSIC_NAMES_CACHE, "a+", fn);
+	freopen(music_path_cache, "a+", fp);
+	freopen(music_names_cache, "a+", fn);
 
 	for (int i = 0; i < playlist_len; i++) {
 		snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, i);
@@ -382,15 +382,15 @@ void catchme_update(void)
 	get_property_int("playlist-count", &playlist_len);
 
 	// we open with 'w' to clear it, then with reopen with 'a+' to append
-	FILE *fp = fopen(MUSIC_PATHS_CACHE, "w");
-	FILE *fn = fopen(MUSIC_NAMES_CACHE, "w");
+	FILE *fp = fopen(music_path_cache, "w");
+	FILE *fn = fopen(music_names_cache, "w");
 	if (fp == NULL)
-		die("error opening " MUSIC_PATHS_CACHE);
+		die("error opening %s", music_path_cache);
 	if (fn == NULL)
-		die("error opening " MUSIC_NAMES_CACHE);
+		die("error opening %s", music_names_cache);
 
-	freopen(MUSIC_PATHS_CACHE, "a+", fp);
-	freopen(MUSIC_NAMES_CACHE, "a+", fn);
+	freopen(music_path_cache, "a+", fp);
+	freopen(music_names_cache, "a+", fn);
 
 	for (int i = 0; i < playlist_len; i++) {
 		snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, i);
@@ -455,13 +455,10 @@ void catchme_current(void)
 
 	if (get_metadata("artist", artist) && get_metadata("title", title)) {
 		printf("%s - %s", artist, title);
-	}
-	else
-	{
+	} else {
 		get_property_string("filename", title);
 		printf("%s", title);
 	}
-
 }
 
 void catchme_pause(void)
@@ -624,6 +621,12 @@ int main(int argc, char *argv[])
 		else if (!strcmp(argv[i], "-s")) {
 			strncpy(socket_path, argv[++i], MAX_PATH_SIZE);
 			socket_path[strlen(socket_path)] = '\0';
+		} else if (!strcmp(argv[i], "-n")) {
+			strncpy(music_names_cache, argv[++i], MAX_PATH_SIZE);
+			socket_path[strlen(music_names_cache)] = '\0';
+		} else if (!strcmp(argv[i], "-p")) {
+			strncpy(music_path_cache, argv[++i], MAX_PATH_SIZE);
+			socket_path[strlen(music_path_cache)] = '\0';
 		} else if (!strcmp(argv[i], "-v")) {
 			puts("catchme " VERSION);
 			exit(EXIT_SUCCESS);
