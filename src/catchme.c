@@ -1,9 +1,9 @@
 #include "catchme.h"
 #include "util.h"
 #include "config.h"
-#include <json_object.h>
-#include <json_types.h>
-#include <json.h>
+#include <json-c/json_object.h>
+#include <json-c/json_types.h>
+#include <json-c/json.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>

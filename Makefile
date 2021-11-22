@@ -11,7 +11,6 @@ MANPREFIX = $(PREFIX)/share/man
 OUT_DIR := out
 SRC_DIR := src
 OBJ_DIR := obj
-INCLUDE_PATHS = -I. -Iinclude
 
 # RELEASE or DEBUG
 BUILD_MODE ?= RELEASE
@@ -30,7 +29,7 @@ PLATFORM ?= PLATFORM_DESKTOP
 ##  -fno-strict-aliasing     jar_xm.h does shady stuff (breaks strict aliasing)
 CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Werror=pointer-arith -MD
 # C Pre Processor Flags
-CPPFLAGS := $(INCLUDE_PATHS)
+CPPFLAGS := -I. -Iinclude -Iinclude/json-c
 # -L linker flags
 LDFLAGS := -L/usr/lib/musl/lib/ -Llib/
 # -l lib flags
