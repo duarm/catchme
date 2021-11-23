@@ -14,8 +14,9 @@ but it might be possible to communicate with other servers.
 
 ## Build & Install
 
+### Arch
 ```shell
-pacman -S mpv
+pacman -S base-devel git mpv musl
 git clone https://gitlab.com/kurenaiz/catchme.git
 cd catchme/
 make && sudo make install
@@ -93,42 +94,42 @@ $ catchme next
 ```
 
 ## Commands
-play - Unpauses
+- play - Unpauses
 
-pause - Pauses
+- pause - Pauses
 
-toggle - Toggle pause
+- toggle - Toggle pause
 
-seek [+/-]TIME - Increments [+], decrements [-] or sets the absolute time of the current music
+- seek \[+/-\]TIME - Increments \[+\], decrements \[-\] or sets the absolute time of the current music
 
-vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute value of volume
+- vol/volume \[+/-\]VOL - Increments \[+\], decrements \[-\] or sets the absolute value of volume
 
-current/curr - Returns the name of the current music
+- current/curr - Returns the name of the current music
 
-prev - Plays previous music
+- next - Plays next music
 
-play-index ID - plays the music the the given ID
+- prev - Plays previous music
 
-playlist - Prints the whole playlist to stdout
+- play-index ID - plays the music the the given ID
 
-playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE (analagous to the --playlist)
+- playlist - Prints the whole playlist to stdout
 
-mute - Toggle mute
+- playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE (analagous to the --playlist)
 
-repeat - Toggle repeat current music
+- mute - Toggle mute
 
-add FILE/PATH - Appends the file/file list/path to the current playlist
+- repeat - Toggle repeat current music
 
-remove ID - Removes the music at the given ID from the playlist
+- add FILE/PATH - Appends the file/file list/path to the current playlist
 
-status - Returns a status list of the current music ?REMOVE?
+- remove ID - Removes the music at the given ID from the playlist
 
-format PATTERN - TODO
+- status - Returns a status list of the current music ?REMOVE?
 
-next - Plays next music
+- format PATTERN - TODO
 
-clear - Clears the playlist
+- clear - Clears the playlist
 
-idle - TODO
+- idle - TODO
 
-update - Updates the music_names_cache and music_paths_cache
+- update - Updates the music_names_cache and music_paths_cache
