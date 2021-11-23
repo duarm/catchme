@@ -38,8 +38,8 @@ at $XDG_CONFIG_HOME/catchme/catchme-socket
 // catchme/include/config.h
 
 // dont forget the quotes
-#define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"```
-
+#define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"
+```
 Recompile and install.
 
 You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
