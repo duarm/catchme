@@ -1,5 +1,7 @@
 compile_commands.json
 
+catchme/
+pkg/
 .cache/
 obj/
 out/
