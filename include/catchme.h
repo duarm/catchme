@@ -14,6 +14,7 @@ void catchme_remove(int id);
 void catchme_mute(void);
 void catchme_toggle(void);
 void catchme_play(void);
+void catchme_format(char *format);
 void catchme_seek(char *seek);
 void catchme_idle(void);
 void catchme_playlist(void);

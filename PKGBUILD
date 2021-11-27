@@ -1,6 +1,6 @@
 pkgname=catchme-git
 _pkgname=catchme
-pkgver=v1.0.r6.ge0ba33d
+pkgver=v1.0.r9.g671d0f1
 pkgrel=1
 pkgdesc="Catch Me mpv cli"
 arch=('i686' 'x86_64')

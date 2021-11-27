@@ -40,7 +40,6 @@ static void usage(void)
 	     "	clear - Clears the playlist\n"
 	     "	idle - TODO\n"
 	     "	update - Updates the music_names_cache and music_paths_cache.");
-	exit(EXIT_SUCCESS);
 }
 
 static void open_socket(void)
@@ -70,9 +69,10 @@ static int send_to_socket(char *msg)
 {
 	int t;
 	while (true) {
+		printf("msg: %s\n", msg);
 		if (send(fd, msg, strlen(cmdbuff), 0) == -1) {
 			perror("send");
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		if ((t = recv(fd, msg, SOCKETBUF_SIZE, 0)) > 0) {
 			msg[t] = '\0';
@@ -91,6 +91,7 @@ bool get_metadata(const char *name, char *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, METADATA_MSG, name);
 	if (send_to_socket(cmdbuff)) {
+		printf("metadata: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *error = json_object_get_string(
 			json_object_object_get(res, "error"));
@@ -443,9 +444,8 @@ void catchme_status(void)
 	       0.0, 0.0, percent_pos, 0.0, vol, 0, 0, 0);
 }
 
-void print_format(void)
+void catchme_format(char *format)
 {
-	//todo
 }
 
 void catchme_current(void)
@@ -494,6 +494,7 @@ void catchme_next(void)
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current + 1);
 	if (send_to_socket(cmdbuff)) {
+		printf("%s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
@@ -616,9 +617,10 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "idle")) {
 			/* open_socket(); */
 			/* catchme_idle(); //todo */
-		} else if (!strcmp(argv[i], "-h"))
+		} else if (!strcmp(argv[i], "-h")) {
 			usage();
-		else if (!strcmp(argv[i], "-s")) {
+			exit(EXIT_SUCCESS);
+		} else if (!strcmp(argv[i], "-s")) {
 			strncpy(socket_path, argv[++i], MAX_PATH_SIZE);
 			socket_path[strlen(socket_path)] = '\0';
 		} else if (!strcmp(argv[i], "-n")) {
@@ -630,8 +632,10 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "-v")) {
 			puts("catchme " VERSION);
 			exit(EXIT_SUCCESS);
-		} else
+		} else {
 			usage();
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	if (fd >= 0) {

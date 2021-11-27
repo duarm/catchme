@@ -28,9 +28,9 @@ CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Werror=pointer-a
 # C Pre Processor Flags
 CPPFLAGS := -I. -Iinclude -Iinclude/json-c
 # -L linker flags
-LDFLAGS := -L/usr/lib/musl/lib/ -Llib/
+# LDFLAGS := -L/usr/lib/musl/lib/ -Llib/
 # -l lib flags
-LDLIBS   := -ljson-c /usr/lib/musl/lib/libm.a /usr/lib/musl/lib/libc.a
+LDLIBS   := -static /usr/lib/musl/lib/libc.a /usr/lib/musl/lib/libm.a ./lib/libjson-c.a
 
 EXE := $(OUT_DIR)/$(PROJ_NAME)
 SRC := $(wildcard $(SRC_DIR)/*.c)
