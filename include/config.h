@@ -4,7 +4,7 @@
 #define SOCKETBUF_SIZE 512
 #define DATABUF_SIZE 512
 #define MAX_PATH_SIZE 512
-#define CONFIG_HOME "/home/sakura"
+#define CONFIG_HOME "/home/sakura/.config/"
 
 char music_path_cache[MAX_PATH_SIZE] = CONFIG_HOME "/catchme/music_path_cache";
 char music_names_cache[MAX_PATH_SIZE] = CONFIG_HOME "/catchme/music_name_cache";

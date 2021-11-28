@@ -19,7 +19,8 @@ char cmdbuff[SOCKETBUF_SIZE];
 
 static void usage(void)
 {
-	puts("usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND\n"
+	printf("usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND\n"
+	     "socket path: %s\n"
 	     "COMMAND\n"
 	     "	play - Unpauses\n"
 	     "	pause - Pauses\n"
@@ -39,7 +40,7 @@ static void usage(void)
 	     "	current/curr - Returns the name of the current music\n"
 	     "	clear - Clears the playlist\n"
 	     "	idle - TODO\n"
-	     "	update - Updates the music_names_cache and music_paths_cache.");
+	     "	update - Updates the music_names_cache and music_paths_cache.", socket_path);
 }
 
 static void open_socket(void)
@@ -69,7 +70,6 @@ static int send_to_socket(char *msg)
 {
 	int t;
 	while (true) {
-		printf("msg: %s\n", msg);
 		if (send(fd, msg, strlen(cmdbuff), 0) == -1) {
 			perror("send");
 			exit(EXIT_FAILURE);
@@ -91,7 +91,6 @@ bool get_metadata(const char *name, char *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, METADATA_MSG, name);
 	if (send_to_socket(cmdbuff)) {
-		printf("metadata: %s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *error = json_object_get_string(
 			json_object_object_get(res, "error"));
@@ -298,7 +297,6 @@ void catchme_seek(char *seek)
 		if (len > 4)
 			return;
 		strncpy(timebuff, &seek[0], len - 1);
-		printf("%s\n", timebuff);
 		time = atoi(timebuff);
 
 		if (time > 100)
@@ -446,6 +444,7 @@ void catchme_status(void)
 
 void catchme_format(char *format)
 {
+	printf("format: %s\n", format);
 }
 
 void catchme_current(void)
@@ -580,6 +579,9 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "pause")) {
 			open_socket();
 			catchme_pause();
+		} else if (!strcmp(argv[i], "format")) {
+			open_socket();
+			catchme_format(argv[++i]);
 		} else if (!strcmp(argv[i], "shuff") ||
 			   !strcmp(argv[i], "shuffle")) {
 			open_socket();
