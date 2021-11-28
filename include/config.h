@@ -8,7 +8,8 @@
 
 char music_path_cache[MAX_PATH_SIZE] = CONFIG_HOME "/catchme/music_path_cache";
 char music_names_cache[MAX_PATH_SIZE] = CONFIG_HOME "/catchme/music_name_cache";
-char socket_path[MAX_PATH_SIZE] = CONFIG_HOME "/catchme/catchme-socket";
+// socket paths are capped at 108 bytes
+char socket_path[108] = CONFIG_HOME "/catchme/catchme-socket";
 
 #define SET_PLAYING_MSG                                                        \
 	"{ \"command\": [\"set_property\", \"playlist-pos\", %d ] }\n" // index

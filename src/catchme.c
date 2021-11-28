@@ -134,7 +134,7 @@ bool get_property_string(const char *property, char *result)
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *str = json_object_get_string(
 			json_object_object_get(res, "data"));
-		strncpy(result, str, DATABUF_SIZE);
+		strncpy(result, str, DATABUF_SIZE - 1);
 		json_object_put(res);
 		return true;
 	}
@@ -204,7 +204,7 @@ void catchme_play_playlist(char *path)
 
 void catchme_remove(int id)
 {
-	int current;
+	int current = 0;
 	get_property_int("playlist-pos", &current);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_REMOVE, id);
@@ -224,7 +224,7 @@ void catchme_remove(int id)
 
 void catchme_repeat(void)
 {
-	bool loop;
+	bool loop = false;
 	get_property_bool("loop-file", &loop);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "loop-file",
@@ -243,7 +243,7 @@ void catchme_save_playlist(void)
 
 void catchme_mute(void)
 {
-	bool mute;
+	bool mute = false;
 	get_property_bool("mute", &mute);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "mute",
@@ -257,7 +257,7 @@ void catchme_mute(void)
 
 void catchme_toggle(void)
 {
-	bool pause;
+	bool pause = false;
 	get_property_bool("pause", &pause);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause",
@@ -283,7 +283,7 @@ void catchme_play(void)
 void catchme_seek(char *seek)
 {
 	double time = 0.0;
-	int len = strlen(seek);
+	int len = 5;
 
 	// + or - prefix for relative, raw value for absolute
 	if (seek[0] == '+') {
@@ -291,20 +291,20 @@ void catchme_seek(char *seek)
 		char timebuff[5];
 		if (len > 4)
 			return;
-		strncpy(timebuff, &seek[1], len - 1);
+		strncpy(timebuff, &seek[1], len);
 		time += atof(timebuff);
 	} else if (seek[0] == '-') {
 		get_property_double("playback-time", &time);
 		char timebuff[5];
 		if (len > 4)
 			return;
-		strncpy(timebuff, &seek[1], len - 1);
+		strncpy(timebuff, &seek[1], len);
 		time -= atof(timebuff);
 	} else if (seek[len - 1] == '%') {
 		char timebuff[5];
 		if (len > 4)
 			return;
-		strncpy(timebuff, &seek[0], len - 1);
+		strncpy(timebuff, &seek[0], len);
 		time = atoi(timebuff);
 
 		if (time > 100)
@@ -323,7 +323,7 @@ void catchme_seek(char *seek)
 		char timebuff[5];
 		if (len > 4)
 			return;
-		strncpy(timebuff, &seek[1], len - 1);
+		strncpy(timebuff, &seek[1], len);
 		time = atof(timebuff);
 	}
 
@@ -346,7 +346,7 @@ bool get_filepath(char *result, int index)
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *str = json_object_get_string(
 			json_object_object_get(res, "data"));
-		strncpy(result, str, DATABUF_SIZE);
+		strncpy(result, str, DATABUF_SIZE - 1);
 		json_object_put(res);
 		return true;
 	}
@@ -355,7 +355,7 @@ bool get_filepath(char *result, int index)
 
 void catchme_playlist(void)
 {
-	int playlist_len;
+	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 
 	// we open with 'w' to clear it, then reopen with 'a+' to append
@@ -396,7 +396,7 @@ void catchme_play_index(int index)
 
 void catchme_update(void)
 {
-	int playlist_len;
+	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 
 	// we open with 'w' to clear it, then reopen with 'a+' to append
@@ -440,19 +440,19 @@ void catchme_status(void)
 	if (!get_metadata("title", title))
 		strncpy(title, "N/A", DATABUF_SIZE);
 
-	bool status;
+	bool status = 0;
 	get_property_bool("pause", &status);
 
-	int pos;
+	int pos = 0;
 	get_property_int("playlist-pos", &pos);
 
-	int playlist_len;
+	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 
-	int percent_pos;
+	int percent_pos = 0;
 	get_property_int("percent-pos", &percent_pos);
 
-	int vol;
+	int vol = 0;
 	get_property_int("volume", &vol);
 
 	// time/duration (percentage)
@@ -491,32 +491,32 @@ void catchme_format(char *format)
 	/* 	strncpy(data, "N/A", DATABUF_SIZE); */
 	/* result = repl_str(result, "-comment-", data); */
 
-	bool status;
+	bool status = false;
 	get_property_bool("pause", &status);
 	snprintf(data, DATABUF_SIZE, "%s", status ? "paused" : "playing");
 	result = repl_str(result, "-status-", data);
 
-	int pos;
+	int pos = 0;
 	get_property_int("playlist-pos", &pos);
 	snprintf(data, DATABUF_SIZE, "%d", pos);
 	result = repl_str(result, "-playlist_pos-", data);
 
-	int playlist_len;
+	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 	snprintf(data, DATABUF_SIZE, "%d", playlist_len);
 	result = repl_str(result, "-playlist_count-", data);
 
-	int percent_pos;
+	int percent_pos = 0;
 	get_property_int("percent-pos", &percent_pos);
 	snprintf(data, DATABUF_SIZE, "%d", percent_pos);
 	result = repl_str(result, "-percent_pos-", data);
 
-	int vol;
+	int vol = 0;
 	get_property_int("volume", &vol);
 	snprintf(data, DATABUF_SIZE, "%d", vol);
 	result = repl_str(result, "-volume-", data);
 
-	bool mute;
+	bool mute = false;
 	get_property_bool("mute", &mute);
 	snprintf(data, DATABUF_SIZE, "%s", mute ? "muted" : "unmuted");
 	result = repl_str(result, "-muted-", data);
@@ -550,7 +550,7 @@ void catchme_pause(void)
 
 void catchme_prev(void)
 {
-	int current;
+	int current = 0;
 	get_property_int("playlist-pos", &current);
 
 	if (current == 0)
@@ -566,12 +566,11 @@ void catchme_prev(void)
 
 void catchme_next(void)
 {
-	int current;
+	int current = 0;
 	get_property_int("playlist-pos", &current);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current + 1);
 	if (send_to_socket(cmdbuff)) {
-		printf("%s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		json_object_put(res);
@@ -701,13 +700,13 @@ int main(int argc, char *argv[])
 			usage();
 			exit(EXIT_SUCCESS);
 		} else if (!strcmp(argv[i], "-s")) {
-			strncpy(socket_path, argv[++i], MAX_PATH_SIZE);
+			strncpy(socket_path, argv[++i], 107);
 			socket_path[strlen(socket_path)] = '\0';
 		} else if (!strcmp(argv[i], "-n")) {
-			strncpy(music_names_cache, argv[++i], MAX_PATH_SIZE);
+			strncpy(music_names_cache, argv[++i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_names_cache)] = '\0';
 		} else if (!strcmp(argv[i], "-p")) {
-			strncpy(music_path_cache, argv[++i], MAX_PATH_SIZE);
+			strncpy(music_path_cache, argv[++i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_path_cache)] = '\0';
 		} else if (!strcmp(argv[i], "-v")) {
 			puts("catchme " VERSION);
