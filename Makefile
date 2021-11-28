@@ -40,7 +40,7 @@ ifeq ($(BUILD_MODE),DEBUG)
 	CFLAGS += -D_DEBUG -g -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
 endif
 ifeq ($(BUILD_MODE),RELEASE)
-	CFLAGS += -s -O1
+	CFLAGS += -s -O3
 endif
 
 # No uname.exe on MinGW!, but OS=Windows_NT on Windows!
