@@ -1,11 +1,17 @@
 # Catch you, Catch me (catchme)
 
 Catch You, Catch me is a cli interface to communicate with a mpv server
-through an unix socket, written in pure and simple c99. I made this because
-mpvc was super slow due to being a shell script.
+through an unix socket, written in pure and simple c99.
+
+## More
+I made this because mpvc was super slow due to being a shell script.
+This program doesn't have any runtime dependencies, as everything it uses (musl as libc, json-c)
+was static linked. This results in faster loading times, especially important in a program which
+runs for some milliseconds and then closes.
+
 The default protocol communicates with mpv and was only tested with mpv.
 I tried to make it as easy as possible to adapt to mpv's evolving protocol,
-but it might be possible to communicate with other servers by editing config.h.
+but it might be possible to communicate with other servers by editing each message on config.h.
 
 ## Features
 
@@ -110,7 +116,7 @@ $ catchme next
 
 - prev - Plays previous music
 
-- play-index ID - plays the music the the given ID
+- play-index POS - plays the music the the given POS
 
 - playlist - Prints the whole playlist to stdout
 
@@ -122,14 +128,26 @@ $ catchme next
 
 - add FILE/PATH - Appends the file/file list/path to the current playlist
 
-- remove ID - Removes the music at the given ID from the playlist
+- remove POS - Removes the music at the given ID from the playlist
 
 - status - Returns a status list of the current music ?REMOVE?
 
-- format PATTERN - TODO
+- format FORMAT - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
 
 - clear - Clears the playlist
 
 - idle - TODO
 
 - update - Updates the music_names_cache and music_paths_cache
+
+### Format
+;name;, ;title;, ;artist;, ;album;, ;album-artist;,
+;genre;, ;playlist-count/, /playlist-pos;, ;percent-pos;,
+;status;, ;volume;, ;muted;
+TODO
+;path;, ;single;, ;time;, ;precise-time;, ;speed;, ;length;, ;remaining;, ;repeat;
+
+#### Why ';'
+I wanted three things. 1) something which would not interfere with most other programs. 2) no multikey. 3) keep mpv names.
+both '%' and \"$\" would violate 2) and 1), \"$\" would interfere with shell and '%' with c.
+\- would interfere with 3), as -album-artist- would confuse -album- and -artist-.

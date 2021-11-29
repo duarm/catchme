@@ -29,7 +29,7 @@ static void usage(void)
 	       "	vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute value of volume\n"
 	       "	prev - Plays previous music\n"
 	       "	next - Plays next music\n"
-	       "	play-index ID - plays the music the the given ID\n"
+	       "	play-index POS - Plays the music at the given POS in the playlist.\n"
 	       "	playlist - Prints the whole playlist to stdout\n"
 	       "	playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
 	       "	mute - Toggle mute\n"
@@ -43,11 +43,11 @@ static void usage(void)
 	       "	idle - TODO\n"
 	       "	update - Updates the music_names_cache and music_paths_cache.\n"
 	       "FORMAT\n"
-	       "  -name-, -title-, -artist-, -album-, -album_artist-,\n"
-	       "  -genre-, -playlist_count-, -playlist_pos-, -percent_pos,\n"
-	       "  -status-, -volume-, -muted-\n"
+	       "  ;name;, ;title;, ;artist;, ;album;, ;album-artist;,\n"
+	       "  ;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,\n"
+	       "  ;status;, ;volume;, ;muted;\n"
 	       "TODO\n"
-	       "  -path-, -single-, -time-, -precise_time-, -speed-, -length-, -remaining-, -repeat-",
+	       "  ;path;, ;single;, ;time;, ;precise_time;, ;speed;, ;length;, ;remaining;, ;repeat;",
 	       socket_path);
 }
 
@@ -236,11 +236,6 @@ void catchme_repeat(void)
 	}
 }
 
-void catchme_save_playlist(void)
-{
-	//todo
-}
-
 void catchme_mute(void)
 {
 	bool mute = false;
@@ -283,32 +278,28 @@ void catchme_play(void)
 void catchme_seek(char *seek)
 {
 	double time = 0.0;
-	int len = 5;
+	// max length
+	const int len = 5;
 
 	// + or - prefix for relative, raw value for absolute
 	if (seek[0] == '+') {
 		get_property_double("playback-time", &time);
 		char timebuff[5];
-		if (len > 4)
-			return;
 		strncpy(timebuff, &seek[1], len);
 		time += atof(timebuff);
 	} else if (seek[0] == '-') {
 		get_property_double("playback-time", &time);
 		char timebuff[5];
-		if (len > 4)
-			return;
 		strncpy(timebuff, &seek[1], len);
 		time -= atof(timebuff);
-	} else if (seek[len - 1] == '%') {
+	} else if (seek[strlen(seek) - 1] == '%') {
 		char timebuff[5];
-		if (len > 4)
-			return;
-		strncpy(timebuff, &seek[0], len);
+		strncpy(timebuff, &seek[0], len - 1);
+		printf("%s\n", timebuff);
 		time = atoi(timebuff);
 
-		if (time > 100)
-			time = 100;
+		if (time >= 100)
+			time = 99;
 		else if (time < 0)
 			time = 0;
 
@@ -321,8 +312,6 @@ void catchme_seek(char *seek)
 		return;
 	} else {
 		char timebuff[5];
-		if (len > 4)
-			return;
 		strncpy(timebuff, &seek[1], len);
 		time = atof(timebuff);
 	}
@@ -469,23 +458,23 @@ void catchme_format(char *format)
 	char data[DATABUF_SIZE];
 	if (!get_metadata("artist", data))
 		strncpy(data, "N/A", DATABUF_SIZE);
-	char *result = repl_str(format, "-artist-", data);
+	char *result = repl_str(format, ";artist;", data);
 
 	if (!get_metadata("title", data))
 		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, "-title-", data);
+	result = repl_str(result, ";title;", data);
 
 	if (!get_metadata("album", data))
 		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, "-album-", data);
+	result = repl_str(result, ";album;", data);
 
 	if (!get_metadata("genre", data))
 		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, "-genre-", data);
+	result = repl_str(result, ";genre;", data);
 
 	if (!get_metadata("album_artist", data))
 		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, "-album_artist-", data);
+	result = repl_str(result, ";album-artist;", data);
 
 	/* if (!get_metadata("comment", data)) */
 	/* 	strncpy(data, "N/A", DATABUF_SIZE); */
@@ -494,32 +483,32 @@ void catchme_format(char *format)
 	bool status = false;
 	get_property_bool("pause", &status);
 	snprintf(data, DATABUF_SIZE, "%s", status ? "paused" : "playing");
-	result = repl_str(result, "-status-", data);
+	result = repl_str(result, ";status;", data);
 
 	int pos = 0;
 	get_property_int("playlist-pos", &pos);
 	snprintf(data, DATABUF_SIZE, "%d", pos);
-	result = repl_str(result, "-playlist_pos-", data);
+	result = repl_str(result, ";playlist-pos;", data);
 
 	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 	snprintf(data, DATABUF_SIZE, "%d", playlist_len);
-	result = repl_str(result, "-playlist_count-", data);
+	result = repl_str(result, ";playlist-count;", data);
 
 	int percent_pos = 0;
 	get_property_int("percent-pos", &percent_pos);
 	snprintf(data, DATABUF_SIZE, "%d", percent_pos);
-	result = repl_str(result, "-percent_pos-", data);
+	result = repl_str(result, ";percent-pos;", data);
 
 	int vol = 0;
 	get_property_int("volume", &vol);
 	snprintf(data, DATABUF_SIZE, "%d", vol);
-	result = repl_str(result, "-volume-", data);
+	result = repl_str(result, ";volume;", data);
 
 	bool mute = false;
 	get_property_bool("mute", &mute);
 	snprintf(data, DATABUF_SIZE, "%s", mute ? "muted" : "unmuted");
-	result = repl_str(result, "-muted-", data);
+	result = repl_str(result, ";muted;", data);
 
 	printf("%s\n", result);
 	free(result);
@@ -579,33 +568,28 @@ void catchme_next(void)
 
 void catchme_volume(char *vol)
 {
-	int volume;
+	int volume = 0;
+	const int len = 5;
+	if (!get_property_int("volume", &volume))
+		return;
 
 	// + or - prefix for relative, raw value for absolute
 	if (vol[0] == '+') {
-		get_property_int("volume", &volume);
-		// max 999
-		char volbuff[4];
-		int len = strlen(vol) - 1;
-		memcpy(volbuff, &vol[1], len);
-		volbuff[len + 1] = '\0';
+		char volbuff[5];
+		strncpy(volbuff, &vol[1], len);
 		volume += atoi(volbuff);
 	} else if (vol[0] == '-') {
-		get_property_int("volume", &volume);
-		// max 999
-		char volbuff[4];
-		int len = strlen(vol) - 1;
-		memcpy(volbuff, &vol[1], len);
-		volbuff[len + 1] = '\0';
+		char volbuff[5];
+		strncpy(volbuff, &vol[1], len);
 		volume -= atoi(volbuff);
 	} else {
-		// max 999
-		char volbuff[4];
-		int len = strlen(vol);
-		memcpy(volbuff, &vol[0], len);
-		volbuff[len] = '\0';
+		char volbuff[5];
+		strncpy(volbuff, &vol[0], len);
 		volume = atoi(volbuff);
 	}
+
+	if (volume > MAX_VOLUME)
+		volume = MAX_VOLUME;
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_VOLUME_MSG, volume);
 	if (send_to_socket(cmdbuff)) {
@@ -703,7 +687,8 @@ int main(int argc, char *argv[])
 			strncpy(socket_path, argv[++i], 107);
 			socket_path[strlen(socket_path)] = '\0';
 		} else if (!strcmp(argv[i], "-n")) {
-			strncpy(music_names_cache, argv[++i], MAX_PATH_SIZE - 1);
+			strncpy(music_names_cache, argv[++i],
+				MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_names_cache)] = '\0';
 		} else if (!strcmp(argv[i], "-p")) {
 			strncpy(music_path_cache, argv[++i], MAX_PATH_SIZE - 1);
