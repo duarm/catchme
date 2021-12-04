@@ -25,7 +25,7 @@ static void usage(void)
 	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.\n"
 	       "	pause - Pauses\n"
 	       "	toggle/tog - Toggle pause\n"
-	       "	seek [+/-/%%]TIME - Increments (+), decrements (-), set relative (%%) or set the absolute time of the current music\n"
+	       "	seek [+/-]TIME[%%] - Increments (+), decrements (-), set relative (%%) or set the absolute time of the current music\n"
 	       "	vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
 	       "	next [N] - Play next music, if N is specified, jump to N songs ahead\n"
 	       "	prev [N] - Play the previous song, if N is specified, jump to N songs behind\n"
