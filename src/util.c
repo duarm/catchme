@@ -38,12 +38,17 @@ char *repl_str(const char *str, const char *from, const char *to)
 	/* But never increment capacity by more than this number. */
 	const size_t cache_sz_inc_max = 1048576;
 
-	char *pret, *ret = NULL;
-	const char *pstr2, *pstr = str;
-	size_t i, count = 0;
-	unsigned long *pos_cache_tmp, *pos_cache = NULL;
+	char *pret;
+	char *ret = NULL;
+	const char *pstr2;
+	const char *pstr = str;
+	size_t i;
+	size_t count = 0;
+	unsigned long *pos_cache_tmp;
+	unsigned long *pos_cache = NULL;
 	size_t cache_sz = 0;
-	size_t cpylen, orglen, retlen, tolen, fromlen = strlen(from);
+	size_t cpylen, orglen, retlen, tolen;
+	size_t fromlen = strlen(from);
 
 	/* Find all matches and cache their positions. */
 	while ((pstr2 = strstr(pstr, from)) != NULL) {

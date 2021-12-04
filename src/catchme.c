@@ -24,7 +24,7 @@ static void usage(void)
 	       "COMMAND\n"
 	       "	play - Unpauses\n"
 	       "	pause - Pauses\n"
-	       "	toggle - Toggle pause\n"
+	       "	toggle/tog - Toggle pause\n"
 	       "	seek [+/-]TIME - Increments [+], decrements [-] or sets the absolute time of the current music\n"
 	       "	vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute value of volume\n"
 	       "	prev - Plays previous music\n"
@@ -36,12 +36,13 @@ static void usage(void)
 	       "	repeat - Toggle repeat current music\n"
 	       "	format FORMAT - Returns the string formatted accordingly, with information from the currently playing music\n"
 	       "	add PATH - Apends the music in the given path to the playlist\n"
-	       "	remove ID - Removes the music at the given ID in the playlist\n"
+	       "	remove POS - Removes the music at the given POS in the playlist\n"
 	       "	status - Returns a status list of the current music ?REMOVE?\n"
 	       "	current/curr - Returns the name of the current music\n"
 	       "	clear - Clears the playlist\n"
+	       "	shuffle/shuf - Shuffles the playlist\n"
 	       "	idle - TODO\n"
-	       "	update - Updates the music_names_cache and music_paths_cache.\n"
+	       "	write - Updates the music_names_cache and music_paths_cache.\n"
 	       "FORMAT\n"
 	       "  ;name;, ;title;, ;artist;, ;album;, ;album-artist;,\n"
 	       "  ;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,\n"
@@ -114,6 +115,24 @@ bool get_metadata(const char *name, char *result)
 	return false;
 }
 
+// receives an already formatted msg, returns the data field from the response json as the result.
+bool get_property(const char *msg, char *result)
+{
+	printf("msg: %s\n", msg);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, "%s", msg);
+	if (send_to_socket(cmdbuff)) {
+		printf("res: %s\n", cmdbuff);
+		struct json_object *res = json_tokener_parse(cmdbuff);
+		const char *str = json_object_get_string(
+			json_object_object_get(res, "data"));
+		strncpy(result, str, DATABUF_SIZE - 1);
+		json_object_put(res);
+		return true;
+	}
+	return false;
+}
+
+// receives a property, set the data converted to int as the result.
 bool get_property_int(const char *property, int *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
@@ -127,6 +146,7 @@ bool get_property_int(const char *property, int *result)
 	return false;
 }
 
+// receives a property, returns the data field from the response json as the result.
 bool get_property_string(const char *property, char *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_STRING_MSG, property);
@@ -141,6 +161,7 @@ bool get_property_string(const char *property, char *result)
 	return false;
 }
 
+// receives a property, set the data converted to double as the result.
 bool get_property_double(const char *property, double *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
@@ -154,6 +175,7 @@ bool get_property_double(const char *property, double *result)
 	return false;
 }
 
+// receives a property, set the data converted to bool as the result.
 bool get_property_bool(const char *property, bool *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
@@ -174,35 +196,35 @@ void catchme_playlist_clear(void)
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
-		catchme_update();
+		catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
 
-void catchme_add(char *path)
+void catchme_add(const char *path)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_APPEND, path);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
-		catchme_update();
+		catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
 
-void catchme_play_playlist(char *path)
+void catchme_playlist_play(const char *path)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		msleep(500);
-		catchme_update();
+		catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
 
-void catchme_remove(int id)
+void catchme_remove(const int id)
 {
 	int current = 0;
 	get_property_int("playlist-pos", &current);
@@ -218,7 +240,7 @@ void catchme_remove(int id)
 		// so mpv can perform an audio reconfig
 		if (id == current)
 			msleep(500);
-		catchme_update();
+		catchme_write(WRITE_BOTH);
 	}
 }
 
@@ -275,7 +297,40 @@ void catchme_play(void)
 	}
 }
 
-void catchme_seek(char *seek)
+void catchme_volume(const char *vol)
+{
+	int volume = 0;
+	const int len = 5;
+	if (!get_property_int("volume", &volume))
+		return;
+
+	// + or - prefix for relative, raw value for absolute
+	if (vol[0] == '+') {
+		char volbuff[5];
+		strncpy(volbuff, &vol[1], len);
+		volume += atoi(volbuff);
+	} else if (vol[0] == '-') {
+		char volbuff[5];
+		strncpy(volbuff, &vol[1], len);
+		volume -= atoi(volbuff);
+	} else {
+		char volbuff[5];
+		strncpy(volbuff, &vol[0], len);
+		volume = atoi(volbuff);
+	}
+
+	if (volume > MAX_VOLUME)
+		volume = MAX_VOLUME;
+
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_VOLUME_MSG, volume);
+	if (send_to_socket(cmdbuff)) {
+		/* struct json_object *res = json_tokener_parse(cmdbuff); */
+		/* json_object_get_string(json_object_object_get(res, "error")); */
+		/* json_object_put(res); */
+	}
+}
+
+void catchme_seek(const char *seek)
 {
 	double time = 0.0;
 	// max length
@@ -295,7 +350,6 @@ void catchme_seek(char *seek)
 	} else if (seek[strlen(seek) - 1] == '%') {
 		char timebuff[5];
 		strncpy(timebuff, &seek[0], len - 1);
-		printf("%s\n", timebuff);
 		time = atoi(timebuff);
 
 		if (time >= 100)
@@ -318,17 +372,13 @@ void catchme_seek(char *seek)
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SEEK_MSG, time);
 	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
+		/* struct json_object *res = json_tokener_parse(cmdbuff); */
 		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
+		/* json_object_put(res); */
 	}
 }
 
-void catchme_idle(void)
-{
-}
-
-bool get_filepath(char *result, int index)
+bool get_filepath(char *result, const int index)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, index);
 	if (send_to_socket(cmdbuff)) {
@@ -373,7 +423,7 @@ void catchme_playlist(void)
 	fclose(fn);
 }
 
-void catchme_play_index(int index)
+void catchme_play_index(const int index)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, index);
 	if (send_to_socket(cmdbuff)) {
@@ -383,39 +433,64 @@ void catchme_play_index(int index)
 	}
 }
 
-void catchme_update(void)
+void catchme_write(const int to)
 {
 	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 
+	FILE *fp = NULL;
+	FILE *fn = NULL;
+
 	// we open with 'w' to clear it, then reopen with 'a+' to append
-	FILE *fp = fopen(music_path_cache, "w");
-	FILE *fn = fopen(music_names_cache, "w");
-	if (fp == NULL)
-		die("error opening %s", music_path_cache);
-	if (fn == NULL) {
-		fclose(fp);
-		die("error opening %s", music_names_cache);
+	if (to == WRITE_PATH || to == WRITE_BOTH) {
+		fp = fopen(music_path_cache, "w");
+		if (fp == NULL)
+			die("error opening %s", music_path_cache);
+		freopen(music_path_cache, "a+", fp);
 	}
 
-	freopen(music_path_cache, "a+", fp);
-	freopen(music_names_cache, "a+", fn);
+	if (to == WRITE_NAME || to == WRITE_BOTH) {
+		fn = fopen(music_names_cache, "w");
+
+		if (fn == NULL)
+			die("error opening %s", music_names_cache);
+
+		freopen(music_names_cache, "a+", fn);
+	}
 
 	for (int i = 0; i < playlist_len; i++) {
-		snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, i);
-		if (send_to_socket(cmdbuff)) {
-			struct json_object *res = json_tokener_parse(cmdbuff);
-			const char *str = json_object_get_string(
-				json_object_object_get(res, "data"));
-			fprintf(fp, "%s\n", str);
-			char *bname = basename(str);
-			fprintf(fn, "%s\n", bname);
-			json_object_put(res);
-			free(bname);
+		if (get_filepath(cmdbuff, i)) {
+			if (to == WRITE_BOTH || to == WRITE_PATH) {
+				printf("path: %s\n", cmdbuff);
+				fprintf(fp, "%s\n", cmdbuff);
+			}
+			if (to == WRITE_BOTH || to == WRITE_NAME) {
+				char *name = basename(cmdbuff);
+				printf("nam: %s\n", name);
+				fprintf(fn, "%s\n", name);
+				free(name);
+			}
 		}
 	}
-	fclose(fp);
-	fclose(fn);
+
+	if (fp != NULL)
+		fclose(fp);
+	if (fn != NULL)
+		fclose(fn);
+}
+
+void catchme_write_to(const char *path)
+{
+	int to = WRITE_BOTH;
+	if (path == NULL) {
+		to = WRITE_BOTH;
+	} else if (!strncmp(path, "name", 5)) {
+		to = WRITE_NAME;
+	} else if (!strncmp(path, "path", 5)) {
+		to = WRITE_PATH;
+	} else
+		exit(EXIT_FAILURE);
+	catchme_write(to);
 }
 
 void catchme_status(void)
@@ -514,17 +589,32 @@ void catchme_format(char *format)
 	free(result);
 }
 
+// must free the result
+char *get_artist_title()
+{
+	// if there's no artist or title, we return the filename instead
+	if (!get_metadata("artist", cmdbuff)) {
+		int current = 0;
+		get_property_int("playlist-pos", &current);
+		get_filepath(cmdbuff, current);
+		return basename(cmdbuff);
+	}
+	char *result = repl_str(";artist; - ;title;", ";artist;", cmdbuff);
+
+	if (!get_metadata("title", cmdbuff)) {
+		int current = 0;
+		get_property_int("playlist-pos", &current);
+		get_filepath(cmdbuff, current);
+		return basename(cmdbuff);
+	}
+	return repl_str(result, ";title;", cmdbuff);
+}
+
 void catchme_current(void)
 {
-	char artist[DATABUF_SIZE];
-	char title[DATABUF_SIZE];
-
-	if (get_metadata("artist", artist) && get_metadata("title", title)) {
-		printf("%s - %s", artist, title);
-	} else {
-		get_property_string("filename", title);
-		printf("%s", title);
-	}
+	char* result = get_artist_title();
+	printf("%s\n", result);
+	free(result);
 }
 
 void catchme_pause(void)
@@ -566,46 +656,13 @@ void catchme_next(void)
 	}
 }
 
-void catchme_volume(char *vol)
-{
-	int volume = 0;
-	const int len = 5;
-	if (!get_property_int("volume", &volume))
-		return;
-
-	// + or - prefix for relative, raw value for absolute
-	if (vol[0] == '+') {
-		char volbuff[5];
-		strncpy(volbuff, &vol[1], len);
-		volume += atoi(volbuff);
-	} else if (vol[0] == '-') {
-		char volbuff[5];
-		strncpy(volbuff, &vol[1], len);
-		volume -= atoi(volbuff);
-	} else {
-		char volbuff[5];
-		strncpy(volbuff, &vol[0], len);
-		volume = atoi(volbuff);
-	}
-
-	if (volume > MAX_VOLUME)
-		volume = MAX_VOLUME;
-
-	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_VOLUME_MSG, volume);
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
-}
-
 void catchme_shuffle(void)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
-		catchme_update();
+		catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
@@ -613,14 +670,14 @@ void catchme_shuffle(void)
 int main(int argc, char *argv[])
 {
 	for (int i = 1; i < argc; i++) {
-		/* these options take no arguments */
-		if (!strcmp(argv[i], "toggle")) {
+		if (!strncmp(argv[i], "toggle", 6) ||
+		    !strncmp(argv[i], "tog", 3)) {
 			open_socket();
 			catchme_toggle();
-		} else if (!strcmp(argv[i], "next")) {
+		} else if (!strncmp(argv[i], "next", 4)) {
 			open_socket();
 			catchme_next();
-		} else if (!strcmp(argv[i], "prev")) {
+		} else if (!strncmp(argv[i], "prev", 4)) {
 			open_socket();
 			catchme_prev();
 		} else if (!strcmp(argv[i], "seek")) {
@@ -643,7 +700,7 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "format")) {
 			open_socket();
 			catchme_format(argv[++i]);
-		} else if (!strcmp(argv[i], "shuff") ||
+		} else if (!strcmp(argv[i], "shuf") ||
 			   !strcmp(argv[i], "shuffle")) {
 			open_socket();
 			catchme_shuffle();
@@ -662,9 +719,9 @@ int main(int argc, char *argv[])
 		} else if (!strcmp(argv[i], "add")) {
 			open_socket();
 			catchme_add(argv[++i]);
-		} else if (!strcmp(argv[i], "update")) {
+		} else if (!strcmp(argv[i], "write")) {
 			open_socket();
-			catchme_update();
+			catchme_write_to(argv[++i]);
 		} else if (!strcmp(argv[i], "clear")) {
 			open_socket();
 			catchme_playlist_clear();
@@ -676,7 +733,7 @@ int main(int argc, char *argv[])
 			catchme_playlist();
 		} else if (!strcmp(argv[i], "playlist-play")) {
 			open_socket();
-			catchme_play_playlist(argv[++i]);
+			catchme_playlist_play(argv[++i]);
 		} else if (!strcmp(argv[i], "idle")) {
 			/* open_socket(); */
 			/* catchme_idle(); //todo */

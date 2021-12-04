@@ -3,7 +3,7 @@
 Catch You, Catch me is a cli interface to communicate with a mpv server
 through an unix socket, written in pure and simple c99.
 
-## More
+## More About
 I made this because mpvc was super slow due to being a shell script.
 This program doesn't have any runtime dependencies, as everything it uses (musl as libc, json-c)
 was static linked. This results in faster loading times, especially important in a program which
@@ -91,32 +91,55 @@ exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
 
 Execute this file on your start script.
 
-You can now communicate with your mpv server through catchme.
+You can now communicate with your mpv server through catchme. See Usage section below.
 
+## Usage
+usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND
 ```shell
 $ catchme toggle
 $ catchme next
+$ catchme vol +10 # increase vol by 10
+$ catchme vol 80 # set vol to 80
+$ catchme seek -10 # seek -10 seconds
+$ catchme seek 50% # seek to the middle of the music
 ...
 ```
 
-## Commands
+each catchme instance binds to one socket, this means that this doesn't work:
+```shell
+$ catchme toggle -s "$SOCKET2" toggle
+```
+the workaround is to call catchme again:
+```shell
+$ catchme toggle && catchme -s "$SOCKET2" toggle
+```
+-n and -p are different, since we just write to the given file.
+```shell
+# writes the paths and names to $NAMES_CACHE and $PATHS_CACHE, then writes just the names to $HOME/names
+$ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
+```
+
+
+### Commands
 - play - Unpauses
 
 - pause - Pauses
 
 - toggle - Toggle pause
 
-- seek \[+/-\]TIME - Increments \[+\], decrements \[-\] or sets the absolute time of the current music
+- seek \[\+/-\]TIME[%] - Increments \[+\], decrements \[-\] or sets the absolute time of the current music, you can also put
+  at the end to seek to that percentage
 
-- vol/volume \[+/-\]VOL - Increments \[+\], decrements \[-\] or sets the absolute value of volume
+- vol/volume \[\+/-\]VOL - Increments \[+\], decrements \[-\] or sets the absolute value of volume
 
-- current/curr - Returns the name of the current music
+- current/curr - Returns the artist and title of the current song in the ;artist; - ;title;" format, if any of those metadatas are missing
+  returns the filename instead.
 
 - next - Plays next music
 
 - prev - Plays previous music
 
-- play-index POS - plays the music the the given POS
+- play-index POS - plays the music the the given POS (REMOVE)
 
 - playlist - Prints the whole playlist to stdout
 
@@ -128,26 +151,28 @@ $ catchme next
 
 - add FILE/PATH - Appends the file/file list/path to the current playlist
 
-- remove POS - Removes the music at the given ID from the playlist
+- remove POS - Removes the music at the given POS from the playlist
 
 - status - Returns a status list of the current music ?REMOVE?
 
-- format FORMAT - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
+- format "FORMAT" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
 
 - clear - Clears the playlist
 
 - idle - TODO
 
-- update - Updates the music_names_cache and music_paths_cache
+- write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
 
 ### Format
 ;name;, ;title;, ;artist;, ;album;, ;album-artist;,
-;genre;, ;playlist-count/, /playlist-pos;, ;percent-pos;,
+;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,
 ;status;, ;volume;, ;muted;
+
 TODO
 ;path;, ;single;, ;time;, ;precise-time;, ;speed;, ;length;, ;remaining;, ;repeat;
 
-#### Why ';'
+#### Why ";"
 I wanted three things. 1) something which would not interfere with most other programs. 2) no multikey. 3) keep mpv names.
-both '%' and \"$\" would violate 2) and 1), \"$\" would interfere with shell and '%' with c.
-\- would interfere with 3), as -album-artist- would confuse -album- and -artist-.
+
+both "%" and \"$\" would violate 2) and 1), \"$\" would interfere with shell and \"%\" with c.
+\"-\" would interfere with 3), as -album-artist- would confuse -album- and -artist-.
