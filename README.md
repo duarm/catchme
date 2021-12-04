@@ -96,12 +96,18 @@ You can now communicate with your mpv server through catchme. See Usage section 
 ## Usage
 usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND
 ```shell
-$ catchme toggle
-$ catchme next
-$ catchme vol +10 # increase vol by 10
+$ catchme play 4 # changes current music to the one at index 4
+$ catchme play # unpauses
+$ catchme next # plays next song (index 5)
+$ catchme vol -10 # decrease volume by 10
 $ catchme vol 80 # set vol to 80
-$ catchme seek -10 # seek -10 seconds
+$ catchme seek +10 # seek +10 seconds
 $ catchme seek 50% # seek to the middle of the music
+$ catchme format ";artist; - ;title; [;status;]" # return formatted info about the current song
+$ catchme mute # mutes
+$ catchme mute # unmutes
+$ catchme toggle # pauses
+$ catchme toggle # unpauses
 ...
 ```
 
