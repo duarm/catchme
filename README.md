@@ -121,7 +121,7 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 
 ### Commands
-- play - Unpauses
+- play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
 
 - pause - Pauses
 
@@ -139,11 +139,7 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 - prev - Plays previous music
 
-- play-index POS - plays the music the the given POS (REMOVE)
-
 - playlist - Prints the whole playlist to stdout
-
-- playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE (analagous to the --playlist)
 
 - mute - Toggle mute
 
@@ -153,7 +149,9 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 - remove POS - Removes the music at the given POS from the playlist
 
-- status - Returns a status list of the current music ?REMOVE?
+- shuffle/shuf - Shuffles the playlist
+
+- status - Returns a status list of the current music
 
 - format "FORMAT" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
 

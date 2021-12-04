@@ -22,27 +22,26 @@ static void usage(void)
 	printf("usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND\n"
 	       "socket path: %s\n"
 	       "COMMAND\n"
-	       "	play - Unpauses\n"
+	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.\n"
 	       "	pause - Pauses\n"
 	       "	toggle/tog - Toggle pause\n"
 	       "	seek [+/-]TIME - Increments [+], decrements [-] or sets the absolute time of the current music\n"
 	       "	vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute value of volume\n"
 	       "	prev - Plays previous music\n"
 	       "	next - Plays next music\n"
-	       "	play-index POS - Plays the music at the given POS in the playlist.\n"
 	       "	playlist - Prints the whole playlist to stdout\n"
-	       "	playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
+	       "	playlis-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
 	       "	format FORMAT - Returns the string formatted accordingly, with information from the currently playing music\n"
 	       "	add PATH - Apends the music in the given path to the playlist\n"
 	       "	remove POS - Removes the music at the given POS in the playlist\n"
-	       "	status - Returns a status list of the current music ?REMOVE?\n"
-	       "	current/curr - Returns the name of the current music\n"
+	       "	status - Returns a status list of the current music\n"
+	       "	current/curr - Returns ';artist; - ;title;' of the current music.\n"
 	       "	clear - Clears the playlist\n"
 	       "	shuffle/shuf - Shuffles the playlist\n"
 	       "	idle - TODO\n"
-	       "	write - Updates the music_names_cache and music_paths_cache.\n"
+	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing passed.\n"
 	       "FORMAT\n"
 	       "  ;name;, ;title;, ;artist;, ;album;, ;album-artist;,\n"
 	       "  ;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,\n"
@@ -612,7 +611,7 @@ char *get_artist_title()
 
 void catchme_current(void)
 {
-	char* result = get_artist_title();
+	char *result = get_artist_title();
 	printf("%s\n", result);
 	free(result);
 }
@@ -627,7 +626,7 @@ void catchme_pause(void)
 	}
 }
 
-void catchme_prev(void)
+void catchme_prev(const int n)
 {
 	int current = 0;
 	get_property_int("playlist-pos", &current);
@@ -643,12 +642,12 @@ void catchme_prev(void)
 	}
 }
 
-void catchme_next(void)
+void catchme_next(const int n)
 {
 	int current = 0;
 	get_property_int("playlist-pos", &current);
 
-	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current + 1);
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current + n);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
@@ -676,84 +675,103 @@ int main(int argc, char *argv[])
 			catchme_toggle();
 		} else if (!strncmp(argv[i], "next", 4)) {
 			open_socket();
-			catchme_next();
+			catchme_next(1);
 		} else if (!strncmp(argv[i], "prev", 4)) {
 			open_socket();
-			catchme_prev();
-		} else if (!strcmp(argv[i], "seek")) {
+			catchme_prev(1);
+		} else if (!strncmp(argv[i], "seek", 4)) {
 			open_socket();
 			catchme_seek(argv[++i]);
-		} else if (!strcmp(argv[i], "vol") ||
-			   !strcmp(argv[i], "volume")) {
+		} else if (!strncmp(argv[i], "vol", 3) ||
+			   !strncmp(argv[i], "volume", 6)) {
 			open_socket();
 			catchme_volume(argv[++i]);
-		} else if (!strcmp(argv[i], "curr") ||
-			   !strcmp(argv[i], "current")) {
+		} else if (!strncmp(argv[i], "curr", 4) ||
+			   !strncmp(argv[i], "current", 7)) {
 			open_socket();
 			catchme_current();
-		} else if (!strcmp(argv[i], "play")) {
+		} else if (!strncmp(argv[i], "play", 4)) {
 			open_socket();
-			catchme_play();
-		} else if (!strcmp(argv[i], "pause")) {
+			i++;
+			if (i == argc)
+				catchme_play();
+			else
+				catchme_play_index(atoi(argv[i]));
+		} else if (!strncmp(argv[i], "pause", 5)) {
 			open_socket();
 			catchme_pause();
-		} else if (!strcmp(argv[i], "format")) {
+		} else if (!strncmp(argv[i], "format", 6)) {
 			open_socket();
-			catchme_format(argv[++i]);
-		} else if (!strcmp(argv[i], "shuf") ||
-			   !strcmp(argv[i], "shuffle")) {
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
+			catchme_format(argv[i]);
+		} else if (!strncmp(argv[i], "shuf", 4) ||
+			   !strncmp(argv[i], "shuffle", 7)) {
 			open_socket();
 			catchme_shuffle();
-		} else if (!strcmp(argv[i], "play-index")) {
-			open_socket();
-			catchme_play_index(atoi(argv[++i]));
-		} else if (!strcmp(argv[i], "status")) {
+		}else if (!strncmp(argv[i], "status", 6)) {
 			open_socket();
 			catchme_status();
-		} else if (!strcmp(argv[i], "mute")) {
+		} else if (!strncmp(argv[i], "mute", 4)) {
 			open_socket();
 			catchme_mute();
 		} else if (!strcmp(argv[i], "remove")) {
 			open_socket();
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
 			catchme_remove(atoi(argv[++i]));
-		} else if (!strcmp(argv[i], "add")) {
+		} else if (!strncmp(argv[i], "add", 3)) {
 			open_socket();
 			catchme_add(argv[++i]);
-		} else if (!strcmp(argv[i], "write")) {
+		} else if (!strncmp(argv[i], "write", 5)) {
 			open_socket();
 			catchme_write_to(argv[++i]);
-		} else if (!strcmp(argv[i], "clear")) {
+		} else if (!strncmp(argv[i], "clear", 5)) {
 			open_socket();
 			catchme_playlist_clear();
-		} else if (!strcmp(argv[i], "repeat")) {
+		} else if (!strncmp(argv[i], "repeat", 6)) {
 			open_socket();
 			catchme_repeat();
-		} else if (!strcmp(argv[i], "playlist")) {
+		} else if (!strncmp(argv[i], "playlist", 8)) {
 			open_socket();
 			catchme_playlist();
-		} else if (!strcmp(argv[i], "playlist-play")) {
+		} else if (!strncmp(argv[i], "playlist-play", 13)) {
 			open_socket();
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
 			catchme_playlist_play(argv[++i]);
-		} else if (!strcmp(argv[i], "idle")) {
+		} else if (!strncmp(argv[i], "idle", 4)) {
 			/* open_socket(); */
 			/* catchme_idle(); //todo */
-		} else if (!strcmp(argv[i], "-h")) {
+		} else if (!strncmp(argv[i], "-h", 2)) {
 			usage();
 			exit(EXIT_SUCCESS);
-		} else if (!strcmp(argv[i], "-s")) {
-			strncpy(socket_path, argv[++i], 107);
+		} else if (!strncmp(argv[i], "-s", 2)) {
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
+			strncpy(socket_path, argv[i], 107);
 			socket_path[strlen(socket_path)] = '\0';
-		} else if (!strcmp(argv[i], "-n")) {
-			strncpy(music_names_cache, argv[++i],
-				MAX_PATH_SIZE - 1);
+		} else if (!strncmp(argv[i], "-n", 2)) {
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
+			strncpy(music_names_cache, argv[i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_names_cache)] = '\0';
 		} else if (!strcmp(argv[i], "-p")) {
-			strncpy(music_path_cache, argv[++i], MAX_PATH_SIZE - 1);
+			i++;
+			if (i + 1 == argc)
+				return EXIT_FAILURE;
+			strncpy(music_path_cache, argv[i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_path_cache)] = '\0';
 		} else if (!strcmp(argv[i], "-v")) {
 			puts("catchme " VERSION);
 			exit(EXIT_SUCCESS);
 		} else {
+			printf("invalid command\n");
 			usage();
 			exit(EXIT_FAILURE);
 		}
@@ -765,4 +783,3 @@ int main(int argc, char *argv[])
 
 	return EXIT_SUCCESS;
 }
-

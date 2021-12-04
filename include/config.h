@@ -6,6 +6,10 @@
 #define MAX_PATH_SIZE 512
 #define CONFIG_HOME "/home/sakura/.config/"
 
+// music_name_cache will have this format
+// useful if you're using the music_path_cache to search for musics
+#define NAME_FORMAT ";artist; - ;title; ;genre; ;album;"
+
 // we cant set the volume to be greater than this
 #define MAX_VOLUME 120
 
