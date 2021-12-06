@@ -31,7 +31,7 @@ static void usage(void)
 	       "	seek [+/-]TIME[%%] - Increments (+), decrements (-), set relative (%%) or set the absolute time of the current music\n"
 	       "	vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
 	       "	next [N] - Play next music, if N is specified, jump to N songs ahead\n"
-	       "	prev [N] - Play the previous song, if N is specified, jump to N songs behind\n"
+	       "	prev/previous [N] - Play the previous song, if N is specified, jump to N songs behind\n"
 	       "	playlist - Prints the whole playlist to stdout\n"
 	       "	playlis-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
 	       "	mute - Toggle mute\n"
@@ -217,9 +217,7 @@ void catchme_add(const char *path)
 void catchme_playlist_play(const char *path)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
-	printf("%s\n", cmdbuff);
 	if (send_to_socket(cmdbuff)) {
-		printf("%s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		msleep(500);
@@ -678,28 +676,23 @@ int main(int argc, char *argv[])
 			open_socket();
 			catchme_toggle();
 		} else if (!strncmp(argv[i], "next", 4)) {
+			open_socket();
 			i++;
-			if (i == argc) {
-				open_socket();
+			if (i == argc)
 				catchme_next(1);
-			} else {
-				open_socket();
+			else
 				catchme_next(atoi(argv[i]));
-			}
 		} else if (!strncmp(argv[i], "prev", 4)) { // prev/previous
 			i++;
-			if (i == argc) {
-				open_socket();
+			open_socket();
+			if (i == argc)
 				catchme_prev(1);
-			} else {
-				open_socket();
+			else
 				catchme_prev(atoi(argv[i]));
-			}
 		} else if (!strncmp(argv[i], "seek", 4)) {
 			i++;
 			if (i == argc)
 				return EXIT_FAILURE;
-
 			open_socket();
 			catchme_seek(argv[i]);
 		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
@@ -712,14 +705,12 @@ int main(int argc, char *argv[])
 			open_socket();
 			catchme_current();
 		} else if (!strncmp(argv[i], "play", PLAY_CMP_SIZE)) {
+			open_socket();
 			i++;
-			if (i == argc) {
-				open_socket();
+			if (i == argc)
 				catchme_play();
-			} else {
-				open_socket();
+			else
 				catchme_play_index(atoi(argv[i]));
-			}
 		} else if (!strncmp(argv[i], "pause", 5)) {
 			open_socket();
 			catchme_pause();
@@ -749,7 +740,7 @@ int main(int argc, char *argv[])
 			if (i == argc)
 				return EXIT_FAILURE;
 			open_socket();
-			catchme_add(argv[++i]);
+			catchme_add(argv[i]);
 		} else if (!strncmp(argv[i], "write", 5)) {
 			open_socket();
 			catchme_write_to(argv[++i]);
