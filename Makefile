@@ -16,57 +16,30 @@ OBJ_DIR := obj
 BUILD_MODE ?= RELEASE
 
 # Define compiler flags:
-#  -O1                      defines optimization level
-#  -g                       include debug information on compilation
-#  -s                       strip unnecessary data from build
 #  -Wall                    turns on most, but not all, compiler warnings
 #  -std=c99                 defines C language mode (standard C from 1999 revision)
-#  -Wno-missing-braces      ignore invalid warning (GCC bug 53119)
 #  -D_DEFAULT_SOURCE        use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
 #  -Werror=pointer-arith    catch unportable code that does direct arithmetic on void pointers
-CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Wno-missing-braces -Werror=pointer-arith -MD
+CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Werror=pointer-arith -MD
 # C Pre Processor Flags
 CPPFLAGS := -I. -Iinclude -Iinclude/json-c
 # -L linker flags
-# LDFLAGS := -L/usr/lib/musl/lib/ -Llib/
+LDFLAGS := -L/usr/lib/musl/lib/ -Llib/ -Wl,--gc-sections
 # -l lib flags
-LDLIBS   := -static /usr/lib/musl/lib/libc.a /usr/lib/musl/lib/libm.a ./lib/libjson-c.a
+LDLIBS   := -static /usr/lib/musl/lib/libc.a -lm -ljson-c
 
 EXE := $(OUT_DIR)/$(PROJ_NAME)
 SRC := $(wildcard $(SRC_DIR)/*.c)
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 ifeq ($(BUILD_MODE),DEBUG)
+	#  -g                       include debug information on compilation
 	CFLAGS += -D_DEBUG -g -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
 endif
 ifeq ($(BUILD_MODE),RELEASE)
-	CFLAGS += -s -O3
-endif
-
-# No uname.exe on MinGW!, but OS=Windows_NT on Windows!
-# ifeq ($(UNAME),Msys) -> Windows
-ifeq ($(OS),Windows_NT)
-	PLATFORM_OS = WINDOWS
-else
-	UNAMEOS = $(shell uname)
-	ifeq ($(UNAMEOS),Linux)
-	PLATFORM_OS = LINUX
-endif
-ifeq ($(UNAMEOS),FreeBSD)
-	PLATFORM_OS = BSD
-endif
-ifeq ($(UNAMEOS),OpenBSD)
-	PLATFORM_OS = BSD
-endif
-ifeq ($(UNAMEOS),NetBSD)
-	PLATFORM_OS = BSD
-endif
-ifeq ($(UNAMEOS),DragonFly)
-	PLATFORM_OS = BSD
-endif
-ifeq ($(UNAMEOS),Darwin)
-	PLATFORM_OS = OSX
-endif
+	#  -O1                      defines optimization level
+	#  -s                       strip unnecessary data from build
+	CFLAGS += -s -O3 -fdata-sections -ffunction-sections
 endif
 
 all: $(EXE)

@@ -13,9 +13,12 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+// amount of chars necessary to disambiguate
+// play from play, playlist and playlist-play commands
+#define PLAY_CMP_SIZE 10
+
 int fd = -1;
 char cmdbuff[SOCKETBUF_SIZE];
-char *databuff;
 
 static void usage(void)
 {
@@ -214,7 +217,9 @@ void catchme_add(const char *path)
 void catchme_playlist_play(const char *path)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
+	printf("%s\n", cmdbuff);
 	if (send_to_socket(cmdbuff)) {
+		printf("%s\n", cmdbuff);
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		/* json_object_get_string(json_object_object_get(res, "error")); */
 		msleep(500);
@@ -669,53 +674,62 @@ void catchme_shuffle(void)
 int main(int argc, char *argv[])
 {
 	for (int i = 1; i < argc; i++) {
-		if (!strncmp(argv[i], "toggle", 6) ||
-		    !strncmp(argv[i], "tog", 3)) {
+		if (!strncmp(argv[i], "tog", 3)) { // tog/toggle
 			open_socket();
 			catchme_toggle();
 		} else if (!strncmp(argv[i], "next", 4)) {
-			open_socket();
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				open_socket();
 				catchme_next(1);
-			else
+			} else {
+				open_socket();
 				catchme_next(atoi(argv[i]));
-		} else if (!strncmp(argv[i], "prev", 4)) {
-			open_socket();
+			}
+		} else if (!strncmp(argv[i], "prev", 4)) { // prev/previous
+			i++;
+			if (i == argc) {
+				open_socket();
+				catchme_prev(1);
+			} else {
+				open_socket();
+				catchme_prev(atoi(argv[i]));
+			}
+		} else if (!strncmp(argv[i], "seek", 4)) {
 			i++;
 			if (i == argc)
-				catchme_prev(1);
-			else
-				catchme_prev(atoi(argv[i]));
-		} else if (!strncmp(argv[i], "seek", 4)) {
+				return EXIT_FAILURE;
+
 			open_socket();
-			catchme_seek(argv[++i]);
-		} else if (!strncmp(argv[i], "vol", 3) ||
-			   !strncmp(argv[i], "volume", 6)) {
+			catchme_seek(argv[i]);
+		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
 			open_socket();
-			catchme_volume(argv[++i]);
-		} else if (!strncmp(argv[i], "curr", 4) ||
-			   !strncmp(argv[i], "current", 7)) {
+			catchme_volume(argv[i]);
+		} else if (!strncmp(argv[i], "curr", 4)) { // curr/current
 			open_socket();
 			catchme_current();
-		} else if (!strncmp(argv[i], "play", 4)) {
-			open_socket();
+		} else if (!strncmp(argv[i], "play", PLAY_CMP_SIZE)) {
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				open_socket();
 				catchme_play();
-			else
+			} else {
+				open_socket();
 				catchme_play_index(atoi(argv[i]));
+			}
 		} else if (!strncmp(argv[i], "pause", 5)) {
 			open_socket();
 			catchme_pause();
 		} else if (!strncmp(argv[i], "format", 6)) {
-			open_socket();
 			i++;
 			if (i == argc)
 				return EXIT_FAILURE;
+			open_socket();
 			catchme_format(argv[i]);
-		} else if (!strncmp(argv[i], "shuf", 4) ||
-			   !strncmp(argv[i], "shuffle", 7)) {
+		} else if (!strncmp(argv[i], "shuf", 4)) { // shuf/shuffle
 			open_socket();
 			catchme_shuffle();
 		} else if (!strncmp(argv[i], "status", 6)) {
@@ -725,12 +739,15 @@ int main(int argc, char *argv[])
 			open_socket();
 			catchme_mute();
 		} else if (!strcmp(argv[i], "remove")) {
-			open_socket();
 			i++;
 			if (i == argc)
 				return EXIT_FAILURE;
-			catchme_remove(atoi(argv[++i]));
+			open_socket();
+			catchme_remove(atoi(argv[i]));
 		} else if (!strncmp(argv[i], "add", 3)) {
+			i++;
+			if (i == argc)
+				return EXIT_FAILURE;
 			open_socket();
 			catchme_add(argv[++i]);
 		} else if (!strncmp(argv[i], "write", 5)) {
@@ -742,15 +759,15 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "repeat", 6)) {
 			open_socket();
 			catchme_repeat();
-		} else if (!strncmp(argv[i], "playlist", 8)) {
+		} else if (!strncmp(argv[i], "playlist", PLAY_CMP_SIZE)) {
 			open_socket();
 			catchme_playlist();
-		} else if (!strncmp(argv[i], "playlist-play", 13)) {
-			open_socket();
+		} else if (!strncmp(argv[i], "playlist-play", PLAY_CMP_SIZE)) {
 			i++;
 			if (i == argc)
 				return EXIT_FAILURE;
-			catchme_playlist_play(argv[++i]);
+			open_socket();
+			catchme_playlist_play(argv[i]);
 		} else if (!strncmp(argv[i], "idle", 4)) {
 			/* open_socket(); */
 			/* catchme_idle(); //todo */
