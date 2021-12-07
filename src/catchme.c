@@ -4,7 +4,6 @@
 #include <json-c/json_object.h>
 #include <json-c/json_types.h>
 #include <json-c/json.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,24 +26,27 @@ static void usage(void)
 	       "COMMAND\n"
 	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.\n"
 	       "	pause - Pauses\n"
-	       "	toggle/tog - Toggle pause\n"
+	       "	toggle - Toggle pause\n"
 	       "	seek [+/-]TIME[%%] - Increments (+), decrements (-), set relative (%%) or set the absolute time of the current music\n"
-	       "	vol/volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
+	       "	volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
 	       "	next [N] - Play next music, if N is specified, jump to N songs ahead\n"
-	       "	prev/previous [N] - Play the previous song, if N is specified, jump to N songs behind\n"
+	       "	previous [N] - Play the previous song, if N is specified, jump to N songs behind\n"
 	       "	playlist - Prints the whole playlist to stdout\n"
-	       "	playlis-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
+	       "	playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
 	       "	format FORMAT - Returns the string formatted accordingly, with information from the currently playing music\n"
 	       "	add PATH - Apends the music in the given path to the playlist\n"
 	       "	remove POS - Removes the music at the given POS in the playlist\n"
 	       "	status - Returns a status list of the current music\n"
-	       "	current/curr - Returns ';artist; - ;title;' of the current music.\n"
+	       "	current - Returns ';artist; - ;title;' of the current music.\n"
 	       "	clear - Clears the playlist\n"
-	       "	shuffle/shuf - Shuffles the playlist\n"
+	       "	shuffle - Shuffles the playlist\n"
 	       "	idle - TODO\n"
 	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing passed.\n"
+	       "OBS\n"
+	       "	partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume,\n"
+	       "	play=play, playl=playlist, playlist-p=playlist-play\n"
 	       "FORMAT\n"
 	       "  ;name;, ;title;, ;artist;, ;album;, ;album-artist;,\n"
 	       "  ;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,\n"
@@ -308,15 +310,15 @@ void catchme_volume(const char *vol)
 
 	// + or - prefix for relative, raw value for absolute
 	if (vol[0] == '+') {
-		char volbuff[5];
+		char volbuff[6];
 		strncpy(volbuff, &vol[1], len);
 		volume += atoi(volbuff);
 	} else if (vol[0] == '-') {
-		char volbuff[5];
+		char volbuff[6];
 		strncpy(volbuff, &vol[1], len);
 		volume -= atoi(volbuff);
 	} else {
-		char volbuff[5];
+		char volbuff[6];
 		strncpy(volbuff, &vol[0], len);
 		volume = atoi(volbuff);
 	}
@@ -341,16 +343,16 @@ void catchme_seek(const char *seek)
 	// + or - prefix for relative, raw value for absolute
 	if (seek[0] == '+') {
 		get_property_double("playback-time", &time);
-		char timebuff[5];
+		char timebuff[6];
 		strncpy(timebuff, &seek[1], len);
 		time += atof(timebuff);
 	} else if (seek[0] == '-') {
 		get_property_double("playback-time", &time);
-		char timebuff[5];
+		char timebuff[6];
 		strncpy(timebuff, &seek[1], len);
 		time -= atof(timebuff);
 	} else if (seek[strlen(seek) - 1] == '%') {
-		char timebuff[5];
+		char timebuff[6];
 		strncpy(timebuff, &seek[0], len - 1);
 		time = atoi(timebuff);
 
@@ -367,7 +369,7 @@ void catchme_seek(const char *seek)
 		}
 		return;
 	} else {
-		char timebuff[5];
+		char timebuff[6];
 		strncpy(timebuff, &seek[1], len);
 		time = atof(timebuff);
 	}
@@ -671,24 +673,35 @@ void catchme_shuffle(void)
 
 int main(int argc, char *argv[])
 {
+	int n;
 	for (int i = 1; i < argc; i++) {
 		if (!strncmp(argv[i], "tog", 3)) { // tog/toggle
 			open_socket();
 			catchme_toggle();
 		} else if (!strncmp(argv[i], "next", 4)) {
-			open_socket();
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				// if no argument, next music
+				open_socket();
 				catchme_next(1);
-			else
-				catchme_next(atoi(argv[i]));
+			} else if (get_int(argv[i], &n)) {
+				// otherwise, jump to 'current + n'
+				open_socket();
+				catchme_next(n);
+			} else
+				exit(EXIT_FAILURE);
 		} else if (!strncmp(argv[i], "prev", 4)) { // prev/previous
 			i++;
-			open_socket();
-			if (i == argc)
+			if (i == argc) {
+				// if no argument, previous music
+				open_socket();
 				catchme_prev(1);
-			else
-				catchme_prev(atoi(argv[i]));
+			} else if (get_int(argv[i], &n)) {
+				// otherwise, jump to 'current - n'
+				open_socket();
+				catchme_prev(n);
+			} else
+				exit(EXIT_FAILURE);
 		} else if (!strncmp(argv[i], "seek", 4)) {
 			i++;
 			if (i == argc)
@@ -704,13 +717,18 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "curr", 4)) { // curr/current
 			open_socket();
 			catchme_current();
-		} else if (!strncmp(argv[i], "play", PLAY_CMP_SIZE)) {
-			open_socket();
+		} else if (!strncmp(argv[i], "play", 5)) {
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				// if no argument, unpauses
+				open_socket();
 				catchme_play();
-			else
-				catchme_play_index(atoi(argv[i]));
+			} else if (get_int(argv[i], &n)) {
+				// otherwise, play the given valid integer
+				open_socket();
+				catchme_play_index(n);
+			} else
+				exit(EXIT_FAILURE);
 		} else if (!strncmp(argv[i], "pause", 5)) {
 			open_socket();
 			catchme_pause();
@@ -729,12 +747,12 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "mute", 4)) {
 			open_socket();
 			catchme_mute();
-		} else if (!strcmp(argv[i], "remove")) {
+		} else if (!strncmp(argv[i], "remove", 6)) {
 			i++;
-			if (i == argc)
+			if (i == argc || !get_int(argv[i], &n))
 				return EXIT_FAILURE;
 			open_socket();
-			catchme_remove(atoi(argv[i]));
+			catchme_remove(n);
 		} else if (!strncmp(argv[i], "add", 3)) {
 			i++;
 			if (i == argc)
@@ -750,18 +768,15 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "repeat", 6)) {
 			open_socket();
 			catchme_repeat();
-		} else if (!strncmp(argv[i], "playlist", PLAY_CMP_SIZE)) {
-			open_socket();
-			catchme_playlist();
-		} else if (!strncmp(argv[i], "playlist-play", PLAY_CMP_SIZE)) {
+		} else if (!strncmp(argv[i], "playlist-play", 9)) {
 			i++;
 			if (i == argc)
 				return EXIT_FAILURE;
 			open_socket();
 			catchme_playlist_play(argv[i]);
-		} else if (!strncmp(argv[i], "idle", 4)) {
-			/* open_socket(); */
-			/* catchme_idle(); //todo */
+		} else if (!strncmp(argv[i], "playlist", 5)) {
+			open_socket();
+			catchme_playlist();
 		} else if (!strncmp(argv[i], "-h", 2)) {
 			usage();
 			exit(EXIT_SUCCESS);
@@ -779,7 +794,7 @@ int main(int argc, char *argv[])
 			socket_path[strlen(music_names_cache)] = '\0';
 		} else if (!strncmp(argv[i], "-p", 2)) {
 			i++;
-			if (i + 1 == argc)
+			if (i == argc)
 				return EXIT_FAILURE;
 			strncpy(music_path_cache, argv[i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_path_cache)] = '\0';
