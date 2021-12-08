@@ -11,10 +11,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <stdbool.h>
-
-// amount of chars necessary to disambiguate
-// play from play, playlist and playlist-play commands
-#define PLAY_CMP_SIZE 10
+#include <tag_c.h>
 
 int fd = -1;
 char cmdbuff[SOCKETBUF_SIZE];
@@ -26,22 +23,22 @@ static void usage(void)
 	       "COMMAND\n"
 	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.\n"
 	       "	pause - Pauses\n"
-	       "	toggle - Toggle pause\n"
+	       "	toggle/tog - Toggle pause\n"
 	       "	seek [+/-]TIME[%%] - Increments (+), decrements (-), set relative (%%) or set the absolute time of the current music\n"
-	       "	volume [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
+	       "	volume/vol [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
 	       "	next [N] - Play next music, if N is specified, jump to N songs ahead\n"
-	       "	previous [N] - Play the previous song, if N is specified, jump to N songs behind\n"
-	       "	playlist - Prints the whole playlist to stdout\n"
-	       "	playlist-play FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
+	       "	previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind\n"
+	       "	print-playlist - Prints the whole playlist to stdout\n"
+	       "	playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
 	       "	format FORMAT - Returns the string formatted accordingly, with information from the currently playing music\n"
 	       "	add PATH - Apends the music in the given path to the playlist\n"
-	       "	remove POS - Removes the music at the given POS in the playlist\n"
-	       "	status - Returns a status list of the current music\n"
-	       "	current - Returns ';artist; - ;title;' of the current music.\n"
+	       "	remove/rem POS - Removes the music at the given POS in the playlist\n"
+	       "	stat/status - Returns a status list of the current music\n"
+	       "	current/curr - Returns ';artist; - ;title;' of the current music.\n"
 	       "	clear - Clears the playlist\n"
-	       "	shuffle - Shuffles the playlist\n"
+	       "	shuffle/shuf - Shuffles the playlist\n"
 	       "	idle - TODO\n"
 	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing passed.\n"
 	       "OBS\n"
@@ -447,28 +444,24 @@ void catchme_write(const int to)
 
 	// we open with 'w' to clear it, then reopen with 'a+' to append
 	if (to == WRITE_PATH || to == WRITE_BOTH) {
-		fp = fopen(music_path_cache, "w");
+		fp = fopen(music_path_cache, "wa+");
 		if (fp == NULL)
 			die("error opening %s", music_path_cache);
-		freopen(music_path_cache, "a+", fp);
 	}
 
 	if (to == WRITE_NAME || to == WRITE_BOTH) {
-		fn = fopen(music_names_cache, "w");
-
+		fn = fopen(music_names_cache, "wa+");
 		if (fn == NULL)
 			die("error opening %s", music_names_cache);
-
-		freopen(music_names_cache, "a+", fn);
 	}
 
 	for (int i = 0; i < playlist_len; i++) {
 		if (get_filepath(cmdbuff, i)) {
-			if (to == WRITE_BOTH || to == WRITE_PATH) {
+			if (to == WRITE_PATH || to == WRITE_BOTH) {
 				printf("path: %s\n", cmdbuff);
 				fprintf(fp, "%s\n", cmdbuff);
 			}
-			if (to == WRITE_BOTH || to == WRITE_NAME) {
+			if (to == WRITE_NAME || to == WRITE_BOTH) {
 				char *name = basename(cmdbuff);
 				printf("nam: %s\n", name);
 				fprintf(fn, "%s\n", name);
@@ -741,13 +734,13 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "shuf", 4)) { // shuf/shuffle
 			open_socket();
 			catchme_shuffle();
-		} else if (!strncmp(argv[i], "status", 6)) {
+		} else if (!strncmp(argv[i], "stat", 4)) { // stat/status
 			open_socket();
 			catchme_status();
 		} else if (!strncmp(argv[i], "mute", 4)) {
 			open_socket();
 			catchme_mute();
-		} else if (!strncmp(argv[i], "remove", 6)) {
+		} else if (!strncmp(argv[i], "rem", 3)) { // rem/remove
 			i++;
 			if (i == argc || !get_int(argv[i], &n))
 				return EXIT_FAILURE;
@@ -768,13 +761,13 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "repeat", 6)) {
 			open_socket();
 			catchme_repeat();
-		} else if (!strncmp(argv[i], "playlist-play", 9)) {
+		} else if (!strncmp(argv[i], "playlist", 5)) {
 			i++;
 			if (i == argc)
 				return EXIT_FAILURE;
 			open_socket();
 			catchme_playlist_play(argv[i]);
-		} else if (!strncmp(argv[i], "playlist", 5)) {
+		} else if (!strncmp(argv[i], "print-playlist", 14)) {
 			open_socket();
 			catchme_playlist();
 		} else if (!strncmp(argv[i], "-h", 2)) {
