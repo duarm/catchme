@@ -11,7 +11,6 @@
 #include <sys/un.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <tag_c.h>
 
 int fd = -1;
 char cmdbuff[SOCKETBUF_SIZE];
@@ -24,7 +23,7 @@ static void usage(void)
 	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.\n"
 	       "	pause - Pauses\n"
 	       "	toggle/tog - Toggle pause\n"
-	       "	seek [+/-]TIME[%%] - Increments (+), decrements (-), set relative (%%) or set the absolute time of the current music\n"
+	       "	seek [+/-]TIME[%%] - Increments [+], decrements [-], set relative (%%) or set the absolute time of the current music\n"
 	       "	volume/vol [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
 	       "	next [N] - Play next music, if N is specified, jump to N songs ahead\n"
 	       "	previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind\n"
@@ -104,7 +103,7 @@ bool get_metadata(const char *name, char *result)
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *error = json_object_get_string(
 			json_object_object_get(res, "error"));
-		if (!strcmp(error, "success")) {
+		if (!strncmp(error, "success", 7)) {
 			const char *str = json_object_get_string(
 				json_object_object_get(res, "data"));
 			strncpy(result, str, DATABUF_SIZE);
@@ -196,8 +195,10 @@ void catchme_playlist_clear(void)
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_CLEAR);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		catchme_write(WRITE_BOTH);
+		const char *error = json_object_get_string(
+			json_object_object_get(res, "error"));
+		if (!strncmp(error, "success", 7))
+			catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
@@ -207,20 +208,27 @@ void catchme_add(const char *path)
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_APPEND, path);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		catchme_write(WRITE_BOTH);
+		const char *error = json_object_get_string(
+			json_object_object_get(res, "error"));
+		if (!strncmp(error, "success", 7))
+			catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
 
-void catchme_playlist_play(const char *path)
+void catchme_playlist(const char *path)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
+		// TODO: patch solution, find a better one
+		// if we're removing the same track we're playing. we sleep for 0.5s
+		// so mpv can perform an audio reconfig
 		msleep(500);
-		catchme_write(WRITE_BOTH);
+		const char *error = json_object_get_string(
+			json_object_object_get(res, "error"));
+		if (!strncmp(error, "success", 7))
+			catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
@@ -233,15 +241,17 @@ void catchme_remove(const int id)
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_REMOVE, id);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
 
 		// TODO: patch solution, find a better one
 		// if we're removing the same track we're playing. we sleep for 0.5s
 		// so mpv can perform an audio reconfig
 		if (id == current)
 			msleep(500);
-		catchme_write(WRITE_BOTH);
+		const char *error = json_object_get_string(
+			json_object_object_get(res, "error"));
+		if (!strncmp(error, "success", 7))
+			catchme_write(WRITE_BOTH);
+		json_object_put(res);
 	}
 }
 
@@ -252,11 +262,7 @@ void catchme_repeat(void)
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "loop-file",
 		 loop ? "no" : "inf");
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_mute(void)
@@ -266,11 +272,7 @@ void catchme_mute(void)
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "mute",
 		 mute ? "no" : "yes");
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_toggle(void)
@@ -280,22 +282,13 @@ void catchme_toggle(void)
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause",
 		 pause ? "no" : "yes");
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_play(void)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause", "no");
-
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_volume(const char *vol)
@@ -324,11 +317,7 @@ void catchme_volume(const char *vol)
 		volume = MAX_VOLUME;
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_VOLUME_MSG, volume);
-	if (send_to_socket(cmdbuff)) {
-		/* struct json_object *res = json_tokener_parse(cmdbuff); */
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		/* json_object_put(res); */
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_seek(const char *seek)
@@ -372,11 +361,7 @@ void catchme_seek(const char *seek)
 	}
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SEEK_MSG, time);
-	if (send_to_socket(cmdbuff)) {
-		/* struct json_object *res = json_tokener_parse(cmdbuff); */
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		/* json_object_put(res); */
-	}
+	send_to_socket(cmdbuff);
 }
 
 bool get_filepath(char *result, const int index)
@@ -393,23 +378,21 @@ bool get_filepath(char *result, const int index)
 	return false;
 }
 
-void catchme_playlist(void)
+void catchme_print_playlist(void)
 {
 	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
 
 	// we open with 'w' to clear it, then reopen with 'a+' to append
-	FILE *fp = fopen(music_path_cache, "w");
-	FILE *fn = fopen(music_names_cache, "w");
+	FILE *fp = fopen(music_path_cache, "wa+");
 	if (fp == NULL)
 		die("error opening %s", music_path_cache);
+
+	FILE *fn = fopen(music_names_cache, "wa+");
 	if (fn == NULL) {
 		fclose(fp);
 		die("error opening %s", music_names_cache);
 	}
-
-	freopen(music_path_cache, "a+", fp);
-	freopen(music_names_cache, "a+", fn);
 
 	for (int i = 0; i < playlist_len; i++) {
 		if (get_filepath(cmdbuff, i)) {
@@ -462,6 +445,7 @@ void catchme_write(const int to)
 				fprintf(fp, "%s\n", cmdbuff);
 			}
 			if (to == WRITE_NAME || to == WRITE_BOTH) {
+				printf("path: %s\n", cmdbuff);
 				char *name = basename(cmdbuff);
 				printf("nam: %s\n", name);
 				fprintf(fn, "%s\n", name);
@@ -617,11 +601,7 @@ void catchme_current(void)
 void catchme_pause(void)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PROPERTY_MSG, "pause", "yes");
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_prev(const int n)
@@ -633,11 +613,7 @@ void catchme_prev(const int n)
 		return;
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current - 1);
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_next(const int n)
@@ -646,11 +622,7 @@ void catchme_next(const int n)
 	get_property_int("playlist-pos", &current);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current + n);
-	if (send_to_socket(cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff);
 }
 
 void catchme_shuffle(void)
@@ -658,8 +630,10 @@ void catchme_shuffle(void)
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG);
 	if (send_to_socket(cmdbuff)) {
 		struct json_object *res = json_tokener_parse(cmdbuff);
-		/* json_object_get_string(json_object_object_get(res, "error")); */
-		catchme_write(WRITE_BOTH);
+		const char *error = json_object_get_string(
+			json_object_object_get(res, "error"));
+		if (!strncmp(error, "success", 7))
+			catchme_write(WRITE_BOTH);
 		json_object_put(res);
 	}
 }
@@ -766,10 +740,10 @@ int main(int argc, char *argv[])
 			if (i == argc)
 				return EXIT_FAILURE;
 			open_socket();
-			catchme_playlist_play(argv[i]);
+			catchme_playlist(argv[i]);
 		} else if (!strncmp(argv[i], "print-playlist", 14)) {
 			open_socket();
-			catchme_playlist();
+			catchme_print_playlist();
 		} else if (!strncmp(argv[i], "-h", 2)) {
 			usage();
 			exit(EXIT_SUCCESS);

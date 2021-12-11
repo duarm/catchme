@@ -13,11 +13,6 @@ The default protocol communicates with mpv and was only tested with mpv.
 I tried to make it as easy as possible to adapt to mpv's evolving protocol,
 but it might be possible to communicate with other servers by editing each message on config.h.
 
-## Features
-
-- [ ] playlists
-- [X] basic control (see commands section)
-
 ## Build & Install
 
 ### Arch
@@ -30,7 +25,9 @@ make && sudo make install
 
 Or
 
-todo package managers
+```shell
+yay -S catchme-git
+```
 
 ## Configuration
 
@@ -52,7 +49,8 @@ Recompile and install.
 You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
 
 Now, create a script to start the mpv server and make it executable.
-The important option is the --input-ipc-server, the rest is up to you, some recommended ones:
+The important option is the --input-ipc-server and --video=no, the rest is up to you, 
+some recommended ones:
 
 ```shell
 # ./start_catchme
@@ -80,9 +78,9 @@ exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
 #!/bin/sh
 
 # mpv will now start playing the last playlist you played
+musics="path/to/my/musics"
 [ -e "$XDG_CONFIG_HOME/catchme/music_path_cache" ] && \
-	musics="--playlist=$XDG_CONFIG_HOME/catchme/music_path_cache" || \
-	musics="path/to/my/musics"
+	musics="--playlist=$XDG_CONFIG_HOME/catchme/music_path_cache"
 
 exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
         --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
@@ -133,25 +131,27 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 - toggle - Toggle pause
 
-- seek \[\+/-\]TIME[%] - Increments \[+\], decrements \[-\] or sets the absolute time of the current music, you can also put
+- seek `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the current music, you can also put
   at the end to seek to that percentage
 
-- vol/volume \[\+/-\]VOL - Increments \[+\], decrements \[-\] or sets the absolute value of volume
+- vol/volume `[+/-]VOL` - Increments `[+]`, decrements `[-]` or sets the absolute value of volume
 
 - current/curr - Returns the artist and title of the current song in the ;artist; - ;title;" format, if any of those metadatas are missing
   returns the filename instead.
 
-- next - Plays next music
+- next [N] - Play next music, if N is specified, jump to N songs ahead
 
-- prev - Plays previous music
+- previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind
 
-- playlist - Prints the whole playlist to stdout
+- playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
+
+- print-playlist - Prints the whole playlist to stdout
 
 - mute - Toggle mute
 
 - repeat - Toggle repeat current music
 
-- add FILE/PATH - Appends the file/file list/path to the current playlist
+- add FILE/PATH - Appends the file or a file list of paths to the current playlist
 
 - remove POS - Removes the music at the given POS from the playlist
 
@@ -167,6 +167,9 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 - write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
 
+###OBS
+partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
+
 ### Format
 ;name;, ;title;, ;artist;, ;album;, ;album-artist;,
 ;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,
@@ -178,5 +181,5 @@ TODO
 #### Why ";"
 I wanted three things. 1) something which would not interfere with most other programs. 2) no multikey. 3) keep mpv names.
 
-both "%" and \"$\" would violate 2) and 1), \"$\" would interfere with shell and \"%\" with c.
-\"-\" would interfere with 3), as -album-artist- would confuse -album- and -artist-.
+both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and `"%"` with c.
+`"-"` would interfere with 3), as -album-artist- would confuse -album- and -artist-.

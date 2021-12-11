@@ -8,7 +8,10 @@
 
 // music_name_cache will have this format
 // useful if you're using the music_path_cache to search for musics
-#define NAME_FORMAT ";artist; - ;title; ;genre; ;album;"
+#define NAME_FORMAT ";id;: ;artist; - ;title; ;genre; ;album;"
+// if artist or title is missing, it will fallback to this format
+// ;id; and ;filename; are always available
+#define FALLBACK_NAME_FORMAT ";id;: ;filename;"
 
 // we cant set the volume to be greater than this
 #define MAX_VOLUME 120

@@ -26,7 +26,7 @@ CPPFLAGS := -I. -Iinclude -Iinclude/json-c
 # -L linker flags
 LDFLAGS := -L/usr/lib/musl/lib/ -Llib/ -Wl,--gc-sections
 # -l lib flags
-LDLIBS   := -static /usr/lib/musl/lib/libc.a -lm -ljson-c -ltag_c
+LDLIBS   := -static /usr/lib/musl/lib/libc.a -lm -ljson-c
 
 EXE := $(OUT_DIR)/$(PROJ_NAME)
 SRC := $(wildcard $(SRC_DIR)/*.c)
