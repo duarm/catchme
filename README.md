@@ -29,6 +29,8 @@ Or
 yay -S catchme-git
 ```
 
+Or use the provided PKGBUILD.
+
 ## Configuration
 
 You'll need to start your music server first.

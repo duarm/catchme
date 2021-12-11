@@ -1,14 +1,13 @@
+# Maintainer: sakura <sakuramail at(@) tutanota dot(.) com>
+
 pkgname=catchme-git
 _pkgname=catchme
 pkgver=v1.0.r12.ga00618c
 pkgrel=1
-pkgdesc="Catch Me mpv cli"
-arch=('i686' 'x86_64')
+pkgdesc="mpc-like cli for mpv with no runtime dependencies"
+arch=('x86_64')
 license=('GPL3')
-depends=('ffprobe')
 makedepends=('git' 'musl')
-provides=("${_pkgname}")
-conflicts=("${_pkgname}")
 source=("${_pkgname}::git+https://gitlab.com/kurenaiz/catchme.git")
 sha256sums=('SKIP')
 
