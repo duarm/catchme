@@ -2,7 +2,7 @@
 
 #define VERSION "1.0.0"
 #define SOCKETBUF_SIZE 512
-#define DATABUF_SIZE 512
+#define DATABUF_SIZE 1024
 #define MAX_PATH_SIZE 512
 #define CONFIG_HOME "/home/sakura/.config/"
 

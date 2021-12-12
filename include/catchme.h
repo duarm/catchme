@@ -9,9 +9,9 @@ enum {
 	WRITE_PATH,
 };
 
-bool get_metadata(const char *name, char *result);
+bool get_metadata(const char *name, char *result, int result_size);
 bool get_property_bool(const char *property, bool *result);
-bool get_property_string(const char *property, char *result);
+bool get_property_string(const char *property, char *result, int result_size);
 bool get_property_double(const char *property, double *result);
 bool get_property_int(const char *property, int *result);
 char *get_artist_title();

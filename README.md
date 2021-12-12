@@ -13,6 +13,11 @@ The default protocol communicates with mpv and was only tested with mpv.
 I tried to make it as easy as possible to adapt to mpv's evolving protocol,
 but it might be possible to communicate with other servers by editing each message on config.h.
 
+## Todo
+
+- NAME_FORMAT to write to music_names_cache
+- Properly syncing with 'audio-reconfig' events
+
 ## Build & Install
 
 ### Arch
@@ -35,10 +40,8 @@ Or use the provided PKGBUILD.
 
 You'll need to start your music server first.
 
-### MPV
-
-First, edit the SOCKET_FILE macro in config.h to point to the socket file. On our case, it will be located
-at $XDG_CONFIG_HOME/catchme/catchme-socket
+First, edit the SOCKET_FILE macro in config.h to point to the socket file which will be created by mpv's ipc server. 
+On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket
 
 ```c
 // catchme/include/config.h
@@ -94,7 +97,7 @@ Execute this file on your start script.
 You can now communicate with your mpv server through catchme. See Usage section below.
 
 ## Usage
-usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND
+usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` COMMAND
 ```shell
 $ catchme play 4 # changes current music to the one at index 4
 $ catchme play # unpauses
@@ -108,10 +111,13 @@ $ catchme mute # mutes
 $ catchme mute # unmutes
 $ catchme toggle # pauses
 $ catchme toggle # unpauses
+# clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths cache
+$ catchme clear && catchme playlist /path/to/my/playlist && catchme shuff && catchme write
 ...
 ```
 
-each catchme instance binds to one socket, this means that this doesn't work:
+### Quirks
+Each catchme instance binds to one socket, this means that this doesn't work:
 ```shell
 $ catchme toggle -s "$SOCKET2" toggle
 ```
@@ -125,6 +131,23 @@ $ catchme toggle && catchme -s "$SOCKET2" toggle
 $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 ```
 
+When you run certain commands like 'play', 'add' or 'shuff', you might notice that catchme takes some seconds to exit,
+even though the command already finished executing.
+
+That happens because these commands forces mpv into an audio-reconfig state which needs to be waited or handled correctly,
+Since I'm lazy and never done a proper sync with these events coming from the socket, I just sleep for a few miliseconds
+after sending the command to mpv. This hopefully will change in the future.
+
+
+
+The 'write' command is never called automatically, you might want to call every time you make a change to playlist if you're
+using 'music_names_cache' to select music in catchmenu for example.
+
+#### Why ";"
+I wanted three things. 1) something which would not interfere with most other programs. 2) no multikey. 3) keep mpv names.
+
+both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and `"%"` with c.
+`"-"` would interfere with 3), as -album-artist- would confuse -album- and -artist-.
 
 ### Commands
 - play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
@@ -165,12 +188,10 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 - clear - Clears the playlist
 
-- idle - TODO
-
 - write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
 
 ###OBS
-partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
+Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
 
 ### Format
 ;name;, ;title;, ;artist;, ;album;, ;album-artist;,
@@ -179,9 +200,3 @@ partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog
 
 TODO
 ;path;, ;single;, ;time;, ;precise-time;, ;speed;, ;length;, ;remaining;, ;repeat;
-
-#### Why ";"
-I wanted three things. 1) something which would not interfere with most other programs. 2) no multikey. 3) keep mpv names.
-
-both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and `"%"` with c.
-`"-"` would interfere with 3), as -album-artist- would confuse -album- and -artist-.
