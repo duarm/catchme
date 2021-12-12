@@ -405,7 +405,7 @@ void catchme_write(const int to)
 	for (int i = 0; i < playlist_len; i++) {
 		if (get_filepath(databuff, i)) {
 			if (to == WRITE_PATH || to == WRITE_BOTH) {
-				fprintf(fp, "%s\n", cmdbuff);
+				fprintf(fp, "%s\n", databuff);
 			}
 			if (to == WRITE_NAME || to == WRITE_BOTH) {
 				char *name = basename(databuff);
