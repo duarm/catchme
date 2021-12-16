@@ -4,6 +4,7 @@ pkgname=catchme-git
 _pkgname=catchme
 pkgver=v1.0.r12.ga00618c
 pkgrel=1
+url='https://gitlab.com/kurenaiz/catchme'
 pkgdesc="mpc-like cli for mpv with no runtime dependencies"
 arch=('x86_64')
 license=('GPL3')
