@@ -4,14 +4,11 @@ Catch You, Catch me is a cli interface to communicate with a mpv server
 through an unix socket, written in pure and simple c99.
 
 ## More About
+
 I made this because mpvc was super slow due to being a shell script.
 This program doesn't have any runtime dependencies, as everything it uses (musl as libc, json-c)
 was static linked. This results in faster loading times, especially important in a program which
 runs for some milliseconds and then closes.
-
-The default protocol communicates with mpv and was only tested with mpv.
-I tried to make it as easy as possible to adapt to mpv's evolving protocol,
-but it might be possible to communicate with other servers by editing each message on config.h.
 
 ## Todo
 
@@ -96,7 +93,7 @@ Execute this file on your start script.
 
 You can now communicate with your mpv server through catchme. See Usage section below.
 
-## Usage
+## Usage & Examples
 usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` COMMAND
 ```shell
 $ catchme play 4 # changes current music to the one at index 4
@@ -113,7 +110,15 @@ $ catchme toggle # pauses
 $ catchme toggle # unpauses
 # clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths cache
 $ catchme clear && catchme playlist /path/to/my/playlist && catchme shuff && catchme write
-...
+$ tagutil $(catchme format ";path;")
+# /home/sakura/music/sailor_moon/La_Soldier.opus
+---
+- title: La Soldier
+- artist: Sailor Moon
+- singer: Moon Lips
+- album: Sailor Moon OST
+$ catchme format ";title; - ;artist; (;album;) [;status;]"
+Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 ```
 
 ### Quirks

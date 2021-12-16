@@ -1,6 +1,4 @@
 # CATCHME
-# parts from this Makefile were taken from around the internet.
-# most notably, the OS detection was taken from raylib Makefile.
 
 .PHONY: all clean install uninstall
 
@@ -18,9 +16,9 @@ BUILD_MODE ?= RELEASE
 # Define compiler flags:
 #  -Wall                    turns on most, but not all, compiler warnings
 #  -std=c99                 defines C language mode (standard C from 1999 revision)
-#  -D_DEFAULT_SOURCE        use with -std=c99 on Linux and PLATFORM_WEB, required for timespec
+#  -D_DEFAULT_SOURCE        required for timespec
 #  -Werror=pointer-arith    catch unportable code that does direct arithmetic on void pointers
-CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Werror=pointer-arith -MD
+CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Werror=pointer-arith
 # C Pre Processor Flags
 CPPFLAGS := -I. -Iinclude -Iinclude/json-c
 # -L linker flags
@@ -33,13 +31,15 @@ SRC := $(wildcard $(SRC_DIR)/*.c)
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 ifeq ($(BUILD_MODE),DEBUG)
-	#  -g                       include debug information on compilation
-	CFLAGS += -D_DEBUG -g -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
+	#  -g				include debug information on compilation
+	#  additional warnings
+	#  -MD				generate dependency files
+	CFLAGS += -D_DEBUG -g -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs -MD
 endif
 ifeq ($(BUILD_MODE),RELEASE)
-	#  -O1                      defines optimization level
-	#  -s                       strip unnecessary data from build
-	CFLAGS += -s -O3 -fdata-sections -ffunction-sections
+	#  -O3                      defines optimization level
+	#  -s                       strip unnecessary symbols from build
+	CFLAGS += -s -O2 -fdata-sections -ffunction-sections
 endif
 
 all: $(EXE)
@@ -69,7 +69,7 @@ uninstall:
 	# rm -f $(DESTDIR)$(MANPREFIX)/man1/$(PROJ_NAME).1
 
 clean:
-	rm -rfv $(OUT_DIR) $(OBJ_DIR)
-	rm -f compile_commands.json
+	rm -fv $(EXE) $(OBJ_DIR)/*.o
+	rmdir $(OBJ_DIR)
 
 -include $(OBJ:.o=.d)

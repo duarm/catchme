@@ -5,12 +5,10 @@
 #include <json-c/json_types.h>
 #include <json-c/json.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
-#include <stdbool.h>
 
 int fd = -1;
 // cmd buff is used to copy the messages to the socket
@@ -97,7 +95,7 @@ static int send_to_socket(char *msg, char *result)
 			if (t < 0)
 				perror("recv");
 			else
-				printf("Server closed connection\n");
+				fprintf(stderr, "Server closed connection\n");
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -420,7 +418,7 @@ void catchme_write_to(const char *path)
 	} else if (!strncmp(path, "path", 5)) {
 		to = WRITE_PATH;
 	} else {
-		printf("invalid write parameter, possible values: path, name, [EMPTY].\n");
+		fprintf(stderr, "invalid write parameter, possible values: path, name, [EMPTY].\n");
 		exit(EXIT_FAILURE);
 	}
 	catchme_write(to);
@@ -622,7 +620,7 @@ int main(int argc, char *argv[])
 				open_socket();
 				catchme_next(n);
 			} else {
-				printf("invalid integer for next\n");
+				fprintf(stderr, "invalid integer for next\n");
 				return EXIT_FAILURE;
 			}
 		} else if (!strncmp(argv[i], "prev", 4)) { // prev/previous
@@ -636,13 +634,13 @@ int main(int argc, char *argv[])
 				open_socket();
 				catchme_prev(n);
 			} else {
-				printf("invalid integer for prev\n");
+				fprintf(stderr, "invalid integer for prev\n");
 				return EXIT_FAILURE;
 			}
 		} else if (!strncmp(argv[i], "seek", 4)) {
 			i++;
 			if (i == argc) {
-				printf("seek requires 1 parameter, none given.\n");
+				fprintf(stderr, "seek requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -650,7 +648,7 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
 			i++;
 			if (i == argc) {
-				printf("vol requires 1 parameter, none given.\n");
+				fprintf(stderr, "vol requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -669,7 +667,7 @@ int main(int argc, char *argv[])
 				open_socket();
 				catchme_play_index(n);
 			} else {
-				printf("invalid integer for play\n");
+				fprintf(stderr, "invalid integer for play\n");
 				return EXIT_FAILURE;
 			}
 		} else if (!strncmp(argv[i], "pause", 5)) {
@@ -678,7 +676,7 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "format", 6)) {
 			i++;
 			if (i == argc) {
-				printf("format requires 1 string parameter, none given.\n");
+				fprintf(stderr, "format requires 1 string parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -695,10 +693,10 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "rem", 3)) { // rem/remove
 			i++;
 			if (i == argc) {
-				printf("remove requires 1 parameter, none given.\n");
+				fprintf(stderr, "remove requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			} else if (!get_int(argv[i], &n)) {
-				printf("invalid integer for remove\n");
+				fprintf(stderr, "invalid integer for remove\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -706,7 +704,7 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "add", 3)) {
 			i++;
 			if (i == argc) {
-				printf("no path given.\n");
+				fprintf(stderr, "no path given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -735,7 +733,7 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "-s", 2)) {
 			i++;
 			if (i == argc) {
-				printf("-s requires 1 parameter, none given.\n");
+				fprintf(stderr, "-s requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			strncpy(socket_path, argv[i], 107);
@@ -743,7 +741,7 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "-n", 2)) {
 			i++;
 			if (i == argc){
-				printf("-n requires 1 parameter, none given.\n");
+				fprintf(stderr, "-n requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			strncpy(music_names_cache, argv[i], MAX_PATH_SIZE - 1);
@@ -751,7 +749,7 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "-p", 2)) {
 			i++;
 			if (i == argc){
-				printf("-p requires 1 parameter, none given.\n");
+				fprintf(stderr, "-p requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			strncpy(music_path_cache, argv[i], MAX_PATH_SIZE - 1);
@@ -761,7 +759,7 @@ int main(int argc, char *argv[])
 			return EXIT_SUCCESS;
 		} else {
 			usage();
-			printf("invalid command\n");
+			fprintf(stderr, "invalid command\n");
 			return EXIT_FAILURE;
 		}
 	}
