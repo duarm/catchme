@@ -13,7 +13,12 @@
 #include <stdbool.h>
 
 int fd = -1;
+// cmd buff is used to copy the messages to the socket
 char cmdbuff[SOCKETBUF_SIZE];
+// databuff is used to store general data
+// databuff is never implicitly written to unlike cmdbuff, which
+// is used internally by most functions without the necessity to
+// specify it as a parameter.
 char databuff[DATABUF_SIZE];
 
 static void usage(void)
@@ -32,7 +37,7 @@ static void usage(void)
 	       "	playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
-	       "	format FORMAT - Returns the string formatted accordingly, with information from the currently playing music\n"
+	       "	format \";FORMAT;\" - Returns the string formatted accordingly, with information from the currently playing music\n"
 	       "	add PATH - Apends the music in the given path to the playlist\n"
 	       "	remove/rem POS - Removes the music at the given POS in the playlist\n"
 	       "	stat/status - Returns a status list of the current music\n"
@@ -45,11 +50,11 @@ static void usage(void)
 	       "	partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume,\n"
 	       "	play=play, playl=playlist, playlist-p=playlist-play\n"
 	       "FORMAT\n"
-	       "  ;name;, ;title;, ;artist;, ;album;, ;album-artist;,\n"
-	       "  ;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,\n"
-	       "  ;status;, ;volume;, ;muted;\n"
+	       "  name, title, artist, album, album-artist,\n"
+	       "  genre, playlist-count, playlist-pos, percent-pos,\n"
+	       "  status, volume, mute, path, speed, loop-file\n"
 	       "TODO\n"
-	       "  ;path;, ;single;, ;time;, ;precise_time;, ;speed;, ;length;, ;remaining;, ;repeat;",
+	       "  time, precise_time, length, remaining",
 	       socket_path);
 }
 
@@ -117,7 +122,7 @@ bool get_metadata(const char *name, char *result, int result_size)
 	return false;
 }
 
-// receives an already formatted msg, returns the data field from the response json as the result.
+// receives an already formatted msg, writes to result the data field from the response json.
 bool get_property(const char *msg, char *result, int result_size)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, "%s", msg);
@@ -132,7 +137,7 @@ bool get_property(const char *msg, char *result, int result_size)
 	return false;
 }
 
-// receives a property, set the data converted to int as the result.
+// receives a property, writes to result the data converted to int.
 bool get_property_int(const char *property, int *result)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_MSG, property);
@@ -146,7 +151,7 @@ bool get_property_int(const char *property, int *result)
 	return false;
 }
 
-// receives a property, returns the data field from the response json as the result.
+// receives a property, writes to result the data field from the response json.
 bool get_property_string(const char *property, char *result, int result_size)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PROPERTY_STRING_MSG, property);
@@ -155,6 +160,7 @@ bool get_property_string(const char *property, char *result, int result_size)
 		const char *str = json_object_get_string(
 			json_object_object_get(res, "data"));
 		strncpy(result, str, result_size - 1);
+		result[result_size - 1] = '\0';
 		json_object_put(res);
 		return true;
 	}
@@ -199,14 +205,7 @@ void catchme_playlist_clear(void)
 void catchme_add(const char *path)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_APPEND, path);
-	if (send_to_socket(cmdbuff, cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-		const char *error = json_object_get_string(
-			json_object_object_get(res, "error"));
-		if (!strncmp(error, "success", 7))
-			catchme_write(WRITE_BOTH);
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff, cmdbuff);
 }
 
 void catchme_playlist(const char *path)
@@ -222,20 +221,9 @@ void catchme_remove(const int id)
 	get_property_int("playlist-pos", &current);
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_REMOVE, id);
-	if (send_to_socket(cmdbuff, cmdbuff)) {
-		struct json_object *res = json_tokener_parse(cmdbuff);
-
-		// TODO: patch solution, find a better one
-		// if we're removing the same track we're playing. we sleep for 0.5s
-		// so mpv can perform an audio reconfig
-		if (id == current)
-			msleep(500);
-		const char *error = json_object_get_string(
-			json_object_object_get(res, "error"));
-		if (!strncmp(error, "success", 7))
-			catchme_write(WRITE_BOTH);
-		json_object_put(res);
-	}
+	send_to_socket(cmdbuff, cmdbuff);
+	if (id == current)
+		msleep(500);
 }
 
 void catchme_repeat(void)
@@ -347,6 +335,8 @@ void catchme_seek(const char *seek)
 	send_to_socket(cmdbuff, cmdbuff);
 }
 
+// result to store the filepath,
+// playlist index of the music to retrieve the filepath
 bool get_filepath(char *result, const int index)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, GET_PLAYLIST_FILENAME_MSG, index);
@@ -365,7 +355,6 @@ void catchme_print_playlist(void)
 {
 	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
-
 
 	for (int i = 0; i < playlist_len; i++) {
 		if (get_filepath(databuff, i)) {
@@ -430,8 +419,10 @@ void catchme_write_to(const char *path)
 		to = WRITE_NAME;
 	} else if (!strncmp(path, "path", 5)) {
 		to = WRITE_PATH;
-	} else
+	} else {
+		printf("invalid write parameter, possible values: path, name, [EMPTY].\n");
 		exit(EXIT_FAILURE);
+	}
 	catchme_write(to);
 }
 
@@ -461,37 +452,44 @@ void catchme_status(void)
 	int vol = 0;
 	get_property_int("volume", &vol);
 
+	double speed = 0.0;
+	get_property_double("speed", &speed);
+
+	get_property_string("loop-file", databuff, DATABUF_SIZE);
+
+	bool mute = false;
+	get_property_bool("mute", &mute);
+
 	// time/duration (percentage)
 	printf("%s - %s\n"
 	       "[%s] #%d/%d %.2f/%.2f (%d%%)\n"
-	       "speed: %.2fx volume: %d%% muted: %d repeat: %d single: %d",
+	       "speed: %.2fx volume: %d%% muted: %d loop: %s\n",
 	       artist, title, status ? "paused" : "playing", pos, playlist_len,
-	       0.0, 0.0, percent_pos, 0.0, vol, 0, 0, 0);
+	       0.0, 0.0, percent_pos, speed, vol, mute, databuff);
 }
 
 // there's a lot of room for improvement
 void catchme_format(char *format)
 {
-	char data[DATABUF_SIZE];
-	if (!get_metadata("artist", data, DATABUF_SIZE))
-		strncpy(data, "N/A", DATABUF_SIZE);
-	char *result = repl_str(format, ";artist;", data);
+	if (!get_metadata("artist", databuff, DATABUF_SIZE))
+		strncpy(databuff, "N/A", DATABUF_SIZE);
+	char *result = repl_str(format, ";artist;", databuff);
 
-	if (!get_metadata("title", data, DATABUF_SIZE))
-		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, ";title;", data);
+	if (!get_metadata("title", databuff, DATABUF_SIZE))
+		strncpy(databuff, "N/A", DATABUF_SIZE);
+	result = repl_str(result, ";title;", databuff);
 
-	if (!get_metadata("album", data, DATABUF_SIZE))
-		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, ";album;", data);
+	if (!get_metadata("album", databuff, DATABUF_SIZE))
+		strncpy(databuff, "N/A", DATABUF_SIZE);
+	result = repl_str(result, ";album;", databuff);
 
-	if (!get_metadata("genre", data, DATABUF_SIZE))
-		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, ";genre;", data);
+	if (!get_metadata("genre", databuff, DATABUF_SIZE))
+		strncpy(databuff, "N/A", DATABUF_SIZE);
+	result = repl_str(result, ";genre;", databuff);
 
-	if (!get_metadata("album_artist", data, DATABUF_SIZE))
-		strncpy(data, "N/A", DATABUF_SIZE);
-	result = repl_str(result, ";album-artist;", data);
+	if (!get_metadata("album_artist", databuff, DATABUF_SIZE))
+		strncpy(databuff, "N/A", DATABUF_SIZE);
+	result = repl_str(result, ";album-artist;", databuff);
 
 	/* if (!get_metadata("comment", data)) */
 	/* 	strncpy(data, "N/A", DATABUF_SIZE); */
@@ -499,33 +497,46 @@ void catchme_format(char *format)
 
 	bool status = false;
 	get_property_bool("pause", &status);
-	snprintf(data, DATABUF_SIZE, "%s", status ? "paused" : "playing");
-	result = repl_str(result, ";status;", data);
+	snprintf(databuff, DATABUF_SIZE, "%s", status ? "paused" : "playing");
+	result = repl_str(result, ";status;", databuff);
 
 	int pos = 0;
 	get_property_int("playlist-pos", &pos);
-	snprintf(data, DATABUF_SIZE, "%d", pos);
-	result = repl_str(result, ";playlist-pos;", data);
+	snprintf(databuff, DATABUF_SIZE, "%d", pos);
+	result = repl_str(result, ";playlist-pos;", databuff);
 
 	int playlist_len = 0;
 	get_property_int("playlist-count", &playlist_len);
-	snprintf(data, DATABUF_SIZE, "%d", playlist_len);
-	result = repl_str(result, ";playlist-count;", data);
+	snprintf(databuff, DATABUF_SIZE, "%d", playlist_len);
+	result = repl_str(result, ";playlist-count;", databuff);
 
 	int percent_pos = 0;
 	get_property_int("percent-pos", &percent_pos);
-	snprintf(data, DATABUF_SIZE, "%d", percent_pos);
-	result = repl_str(result, ";percent-pos;", data);
+	snprintf(databuff, DATABUF_SIZE, "%d", percent_pos);
+	result = repl_str(result, ";percent-pos;", databuff);
 
 	int vol = 0;
 	get_property_int("volume", &vol);
-	snprintf(data, DATABUF_SIZE, "%d", vol);
-	result = repl_str(result, ";volume;", data);
+	snprintf(databuff, DATABUF_SIZE, "%d", vol);
+	result = repl_str(result, ";volume;", databuff);
 
 	bool mute = false;
 	get_property_bool("mute", &mute);
-	snprintf(data, DATABUF_SIZE, "%s", mute ? "muted" : "unmuted");
-	result = repl_str(result, ";muted;", data);
+	snprintf(databuff, DATABUF_SIZE, "%d", mute);
+	result = repl_str(result, ";mute;", databuff);
+
+	bool loop = false;
+	get_property_bool("loop-file", &loop);
+	snprintf(databuff, DATABUF_SIZE, "%d", loop);
+	result = repl_str(result, ";loop-file;", databuff);
+
+	double speed = 0.0;
+	get_property_double("speed", &speed);
+	snprintf(databuff, DATABUF_SIZE, "%.2f", speed);
+	result = repl_str(result, ";speed;", databuff);
+
+	get_filepath(databuff, pos);
+	result = repl_str(result, ";path;", databuff);
 
 	printf("%s\n", result);
 	free(result);
@@ -610,8 +621,10 @@ int main(int argc, char *argv[])
 				// otherwise, jump to 'current + n'
 				open_socket();
 				catchme_next(n);
-			} else
-				exit(EXIT_FAILURE);
+			} else {
+				printf("invalid integer for next\n");
+				return EXIT_FAILURE;
+			}
 		} else if (!strncmp(argv[i], "prev", 4)) { // prev/previous
 			i++;
 			if (i == argc) {
@@ -622,18 +635,24 @@ int main(int argc, char *argv[])
 				// otherwise, jump to 'current - n'
 				open_socket();
 				catchme_prev(n);
-			} else
-				exit(EXIT_FAILURE);
+			} else {
+				printf("invalid integer for prev\n");
+				return EXIT_FAILURE;
+			}
 		} else if (!strncmp(argv[i], "seek", 4)) {
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				printf("seek requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
+			}
 			open_socket();
 			catchme_seek(argv[i]);
 		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				printf("vol requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
+			}
 			open_socket();
 			catchme_volume(argv[i]);
 		} else if (!strncmp(argv[i], "curr", 4)) { // curr/current
@@ -649,15 +668,19 @@ int main(int argc, char *argv[])
 				// otherwise, play the given valid integer
 				open_socket();
 				catchme_play_index(n);
-			} else
-				exit(EXIT_FAILURE);
+			} else {
+				printf("invalid integer for play\n");
+				return EXIT_FAILURE;
+			}
 		} else if (!strncmp(argv[i], "pause", 5)) {
 			open_socket();
 			catchme_pause();
 		} else if (!strncmp(argv[i], "format", 6)) {
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				printf("format requires 1 string parameter, none given.\n");
 				return EXIT_FAILURE;
+			}
 			open_socket();
 			catchme_format(argv[i]);
 		} else if (!strncmp(argv[i], "shuf", 4)) { // shuf/shuffle
@@ -671,14 +694,21 @@ int main(int argc, char *argv[])
 			catchme_mute();
 		} else if (!strncmp(argv[i], "rem", 3)) { // rem/remove
 			i++;
-			if (i == argc || !get_int(argv[i], &n))
+			if (i == argc) {
+				printf("remove requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
+			} else if (!get_int(argv[i], &n)) {
+				printf("invalid integer for remove\n");
+				return EXIT_FAILURE;
+			}
 			open_socket();
 			catchme_remove(n);
 		} else if (!strncmp(argv[i], "add", 3)) {
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				printf("no path given.\n");
 				return EXIT_FAILURE;
+			}
 			open_socket();
 			catchme_add(argv[i]);
 		} else if (!strncmp(argv[i], "write", 5)) {
@@ -701,32 +731,38 @@ int main(int argc, char *argv[])
 			catchme_print_playlist();
 		} else if (!strncmp(argv[i], "-h", 2)) {
 			usage();
-			exit(EXIT_SUCCESS);
+			return EXIT_SUCCESS;
 		} else if (!strncmp(argv[i], "-s", 2)) {
 			i++;
-			if (i == argc)
+			if (i == argc) {
+				printf("-s requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
+			}
 			strncpy(socket_path, argv[i], 107);
 			socket_path[strlen(socket_path)] = '\0';
 		} else if (!strncmp(argv[i], "-n", 2)) {
 			i++;
-			if (i == argc)
+			if (i == argc){
+				printf("-n requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
+			}
 			strncpy(music_names_cache, argv[i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_names_cache)] = '\0';
 		} else if (!strncmp(argv[i], "-p", 2)) {
 			i++;
-			if (i == argc)
+			if (i == argc){
+				printf("-p requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
+			}
 			strncpy(music_path_cache, argv[i], MAX_PATH_SIZE - 1);
 			socket_path[strlen(music_path_cache)] = '\0';
 		} else if (!strncmp(argv[i], "-v", 2)) {
 			puts("catchme " VERSION);
-			exit(EXIT_SUCCESS);
+			return EXIT_SUCCESS;
 		} else {
-			printf("invalid command\n");
 			usage();
-			exit(EXIT_FAILURE);
+			printf("invalid command\n");
+			return EXIT_FAILURE;
 		}
 	}
 

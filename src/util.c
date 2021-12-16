@@ -154,11 +154,11 @@ int get_int(char *str, int *n)
 	/* call to strtol assigning return to number */
 	long num = strtol(str, (char **)NULL, 10);
 	if ((errno == ERANGE && num == LONG_MIN) || num <= INT_MIN)
-		printf("%lu  invalid  (underflow occurred)\n", num);
+		printf("%lu invalid (underflow occurred)\n", num);
 	else if ((errno == ERANGE && num == LONG_MAX) || num >= INT_MAX)
-		printf("%lu  invalid  (overflow occurred)\n", num);
+		printf("%lu invalid (overflow occurred)\n", num);
 	else if (errno != 0 && num == 0) {
-		printf("%lu  invalid  (unspecified error occurred)\n", num);
+		printf("%lu invalid (unspecified error occurred)\n", num);
 	} else if (errno == 0 && str && (!*str || *str != 0)) {
 		*n = (int)num;
 		return 1;

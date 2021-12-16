@@ -184,19 +184,19 @@ both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and
 
 - status - Returns a status list of the current music
 
-- format "FORMAT" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
+- format ";FORMAT;" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
 
 - clear - Clears the playlist
 
 - write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
 
-###OBS
+### OBS
 Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
 
 ### Format
-;name;, ;title;, ;artist;, ;album;, ;album-artist;,
-;genre;, ;playlist-count;, ;playlist-pos;, ;percent-pos;,
-;status;, ;volume;, ;muted;
+title, artist, album, album-artist,
+genre, playlist-count, playlist-pos, percent-pos,
+status, volume, mute, path, loop-file, speed
 
 TODO
-;path;, ;single;, ;time;, ;precise-time;, ;speed;, ;length;, ;remaining;, ;repeat;
+;time;, ;precise-time;, ;length;, ;remaining;
