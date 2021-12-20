@@ -47,7 +47,10 @@ all: $(EXE)
 $(EXE): $(OBJ) | $(OUT_DIR)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+config.h:
+	cp config.def.h $@
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c config.h | $(OBJ_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OUT_DIR) $(OBJ_DIR):
@@ -69,7 +72,7 @@ uninstall:
 	# rm -f $(DESTDIR)$(MANPREFIX)/man1/$(PROJ_NAME).1
 
 clean:
-	rm -fv $(EXE) $(OBJ_DIR)/*.o
+	rm -fv $(EXE) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d
 	rmdir $(OBJ_DIR)
 
 -include $(OBJ:.o=.d)

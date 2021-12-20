@@ -7,8 +7,7 @@ through an unix socket, written in pure and simple c99.
 
 I made this because mpvc was super slow due to being a shell script.
 This program doesn't have any runtime dependencies, as everything it uses (musl as libc, json-c)
-was static linked. This results in faster loading times, especially important in a program which
-runs for some milliseconds and then closes.
+was static linked. This is just a personal project I found useful enough to share.
 
 ## Todo
 
@@ -17,12 +16,15 @@ runs for some milliseconds and then closes.
 
 ## Build & Install
 
+The recommended way to install this package is to manually keep a copy of it
+
 ### Arch
 ```shell
 pacman -S base-devel git mpv musl
 git clone https://gitlab.com/kurenaiz/catchme.git
 cd catchme/
-make && sudo make install
+// edit config.h as specified in the Configuration section below
+make && sudo make install # compile and install
 ```
 
 Or
@@ -34,11 +36,14 @@ yay -S catchme-git
 Or use the provided PKGBUILD.
 
 ## Configuration
-
+ 
 You'll need to start your music server first.
 
 First, edit the SOCKET_FILE macro in config.h to point to the socket file which will be created by mpv's ipc server. 
-On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket
+On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket.
+
+If you installed from the PKGBUILD/AUR, you can skip
+this part, since the PKGBUILD already sets this up to $XDG_CONFIG_HOME/catchme/ automatically.
 
 ```c
 // catchme/include/config.h
@@ -46,7 +51,7 @@ On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket
 // dont forget the quotes
 #define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"
 ```
-Recompile and install.
+Compile and install.
 
 You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
 
@@ -138,12 +143,9 @@ $ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
 
 When you run certain commands like 'play', 'add' or 'shuff', you might notice that catchme takes some seconds to exit,
 even though the command already finished executing.
-
-That happens because these commands forces mpv into an audio-reconfig state which needs to be waited or handled correctly,
+That happens because these commands forces mpv into an audio-reconfig state which needs to be waited and handled correctly,
 Since I'm lazy and never done a proper sync with these events coming from the socket, I just sleep for a few miliseconds
 after sending the command to mpv. This hopefully will change in the future.
-
-
 
 The 'write' command is never called automatically, you might want to call every time you make a change to playlist if you're
 using 'music_names_cache' to select music in catchmenu for example.
@@ -153,6 +155,8 @@ I wanted three things. 1) something which would not interfere with most other pr
 
 both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and `"%"` with c.
 `"-"` would interfere with 3), as -album-artist- would confuse -album- and -artist-.
+
+after careful consideration I was left with '.' and ',', since I couldn't choose, I ended up with ';'.
 
 ### Commands
 - play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.

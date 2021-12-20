@@ -5,6 +5,7 @@
 #include <json-c/json_types.h>
 #include <json-c/json.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -202,6 +203,10 @@ void catchme_playlist_clear(void)
 
 void catchme_add(const char *path)
 {
+	if (path[0] != '/') {
+		fprintf(stderr, "doesn't look like a full path");
+		exit(EXIT_FAILURE);
+	}
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_APPEND, path);
 	send_to_socket(cmdbuff, cmdbuff);
 }
@@ -215,12 +220,22 @@ void catchme_playlist(const char *path)
 
 void catchme_remove(const int id)
 {
-	int current = 0;
-	get_property_int("playlist-pos", &current);
+	int rem = 0;
+	get_property_int("playlist-pos", &rem);
+
+	int playlist_count = 0;
+	get_property_int("playlist-count", &playlist_count);
+
+	if (id >= playlist_count) {
+		fprintf(stderr,
+			"given index %d is outside of the playlist range 0-%d\n",
+			id, playlist_count - 1);
+		exit(EXIT_FAILURE);
+	}
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_REMOVE, id);
 	send_to_socket(cmdbuff, cmdbuff);
-	if (id == current)
+	if (id == rem)
 		msleep(500);
 }
 
@@ -418,7 +433,8 @@ void catchme_write_to(const char *path)
 	} else if (!strncmp(path, "path", 5)) {
 		to = WRITE_PATH;
 	} else {
-		fprintf(stderr, "invalid write parameter, possible values: path, name, [EMPTY].\n");
+		fprintf(stderr,
+			"invalid write parameter, possible values: path, name, [EMPTY].\n");
 		exit(EXIT_FAILURE);
 	}
 	catchme_write(to);
@@ -640,7 +656,8 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "seek", 4)) {
 			i++;
 			if (i == argc) {
-				fprintf(stderr, "seek requires 1 parameter, none given.\n");
+				fprintf(stderr,
+					"seek requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -648,7 +665,8 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
 			i++;
 			if (i == argc) {
-				fprintf(stderr, "vol requires 1 parameter, none given.\n");
+				fprintf(stderr,
+					"vol requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -676,7 +694,8 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "format", 6)) {
 			i++;
 			if (i == argc) {
-				fprintf(stderr, "format requires 1 string parameter, none given.\n");
+				fprintf(stderr,
+					"format requires 1 string parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			open_socket();
@@ -693,7 +712,8 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "rem", 3)) { // rem/remove
 			i++;
 			if (i == argc) {
-				fprintf(stderr, "remove requires 1 parameter, none given.\n");
+				fprintf(stderr,
+					"remove requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			} else if (!get_int(argv[i], &n)) {
 				fprintf(stderr, "invalid integer for remove\n");
@@ -733,26 +753,31 @@ int main(int argc, char *argv[])
 		} else if (!strncmp(argv[i], "-s", 2)) {
 			i++;
 			if (i == argc) {
-				fprintf(stderr, "-s requires 1 parameter, none given.\n");
+				fprintf(stderr,
+					"-s requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
 			strncpy(socket_path, argv[i], 107);
 			socket_path[strlen(socket_path)] = '\0';
 		} else if (!strncmp(argv[i], "-n", 2)) {
 			i++;
-			if (i == argc){
-				fprintf(stderr, "-n requires 1 parameter, none given.\n");
+			if (i == argc) {
+				fprintf(stderr,
+					"-n requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
-			strncpy(music_names_cache, argv[i], MAX_PATH_SIZE - 1);
+			strncpy(music_names_cache, argv[i],
+				strlen(music_names_cache) - 1);
 			socket_path[strlen(music_names_cache)] = '\0';
 		} else if (!strncmp(argv[i], "-p", 2)) {
 			i++;
-			if (i == argc){
-				fprintf(stderr, "-p requires 1 parameter, none given.\n");
+			if (i == argc) {
+				fprintf(stderr,
+					"-p requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
-			strncpy(music_path_cache, argv[i], MAX_PATH_SIZE - 1);
+			strncpy(music_path_cache, argv[i],
+				strlen(music_path_cache) - 1);
 			socket_path[strlen(music_path_cache)] = '\0';
 		} else if (!strncmp(argv[i], "-v", 2)) {
 			puts("catchme " VERSION);
