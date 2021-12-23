@@ -757,6 +757,9 @@ int main(int argc, char *argv[])
 					"-s requires 1 parameter, none given.\n");
 				return EXIT_FAILURE;
 			}
+			if (fd >= 0)
+				close(fd);
+			fd = -1;
 			strncpy(socket_path, argv[i], 107);
 			socket_path[strlen(socket_path)] = '\0';
 		} else if (!strncmp(argv[i], "-n", 2)) {

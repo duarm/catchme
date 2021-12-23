@@ -6,11 +6,11 @@ through an unix socket, written in pure and simple c99.
 ## More About
 I made this because mpvc was super slow due to being a shell script.
 This program doesn't have any runtime dependencies, as everything it uses (musl as libc, json-c)
-was static linked. This is just a personal project I found useful enough to share.
+was static linked. This project was created for my personal use and I found it useful enough to share.
 
 ## Build & Install
 The recommended way to install this package is to keep a copy of it by cloning the repository, copying
-config.def.h to config.h, and customizing it to your liking. You'll run 'git pull' if you wish to update to the most recent version.
+config.def.h to config.h, and customizing it to your liking. You'll run `git pull` if you wish to update to the most recent version.
 
 ### Arch
 ```shell
@@ -30,8 +30,7 @@ yay -S catchme-git
 Or use the provided PKGBUILD.
 
 ## Configuration
-You'll need to start your music server first.
-
+### catchme
 First, edit the SOCKET_FILE macro in config.h to point to the socket file which will be created by mpv's ipc server. 
 On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket.
 
@@ -52,8 +51,9 @@ $ make && sudo make install
 ```
 
 You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
- 
-Now, create a script to start the mpv server and make it executable.
+
+### mpv
+Create a script to start the mpv server and make it executable.
 The important option is the --input-ipc-server and --video=no, the rest is up to you, 
 some recommended ones:
 
@@ -117,7 +117,7 @@ $ tagutil $(catchme format ";path;")
 - artist: Sailor Moon
 - singer: Moon Lips
 - album: Sailor Moon OST
-$ catchme format ";title; - ;artist; (;album;) [;status;]"
+$ catchme format ";artist; - ;title; (;album;) [;status;]"
 Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 ```
 
@@ -151,42 +151,28 @@ title, artist, album, album-artist,
 genre, playlist-count, playlist-pos, percent-pos,
 status, volume, mute, path, loop-file, speed
 
-TODO
-;time;, ;precise-time;, ;length;, ;remaining;
-
 ### Quirks
-Each catchme instance binds to one socket, this means that this doesn't work:
-```shell
-$ catchme toggle -s "$SOCKET2" toggle
-```
-the workaround is to call catchme again:
-```shell
-$ catchme toggle && catchme -s "$SOCKET2" toggle
-```
--n and -p are different, since we just write to the given file.
-```shell
-# writes the paths and names to $NAMES_CACHE and $PATHS_CACHE, then writes just the names to $HOME/names
-$ catchme -n "$NAMES_CACHE" -p "$PATHS_CACHE" write -p "$HOME/names" write
-```
-
 When you run certain commands like 'play', 'add' or 'shuff', you might notice that catchme takes some seconds to exit,
 even though the command already finished executing.
 That happens because these commands forces mpv into an audio-reconfig state which needs to be waited and handled correctly,
 Since I'm lazy and never done a proper sync with these events coming from the socket, I just sleep for a few miliseconds
 after sending the command to mpv. This hopefully will change in the future.
 
-The 'write' command is never called automatically, you might want to call every time you make a change to playlist if you're
+The `'write'` command is never called automatically, you might want to call every time you make a change to playlist if you're
 using 'music_names_cache' to select music in catchmenu for example.
 
 #### Why ";"
 I wanted three things. 1) something which would not interfere with most other programs. 2) no multikey. 3) keep mpv names.
 
-both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and `"%"` with c.
+both `"%"` and `"$"` would violate 2) and 1), `"$"` would interfere with shell and `"%"` with c.
 `"-"` would interfere with 3), as -album-artist- would confuse -album- and -artist-.
 
-after careful consideration I was left with '.' and ',', since I couldn't choose, I ended up with ';'.
+after careful consideration I was left with `'.'` and `','`, since I couldn't choose, I ended up with `';'`.
 
 ### Todo
 
-- NAME_FORMAT to write to music_names_cache
+- NAME_FORMAT to specify the format to write to music_names_cache
 - Properly syncing with 'audio-reconfig' events
+- FORMAT - time, precise-time, length, remaining
+- add/remove more than one at a time (catchme add ~/msc1.mp3 ~/msc2.mp3 ~/msc3.mp3)
+
