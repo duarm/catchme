@@ -4,27 +4,21 @@ Catch You, Catch me is a cli interface to communicate with a mpv server
 through an unix socket, written in pure and simple c99.
 
 ## More About
-
 I made this because mpvc was super slow due to being a shell script.
 This program doesn't have any runtime dependencies, as everything it uses (musl as libc, json-c)
 was static linked. This is just a personal project I found useful enough to share.
 
-## Todo
-
-- NAME_FORMAT to write to music_names_cache
-- Properly syncing with 'audio-reconfig' events
-
 ## Build & Install
-
-The recommended way to install this package is to manually keep a copy of it
+The recommended way to install this package is to keep a copy of it by cloning the repository, copying
+config.def.h to config.h, and customizing it to your liking. You'll run 'git pull' if you wish to update to the most recent version.
 
 ### Arch
 ```shell
-pacman -S base-devel git mpv musl
-git clone https://gitlab.com/kurenaiz/catchme.git
-cd catchme/
-// edit config.h as specified in the Configuration section below
-make && sudo make install # compile and install
+$ pacman -S base-devel git mpv musl
+$ git clone https://gitlab.com/kurenaiz/catchme.git
+$ cd catchme/
+# edit config.h as specified in the Configuration section below
+$ make && sudo make install # compile and install
 ```
 
 Or
@@ -36,7 +30,6 @@ yay -S catchme-git
 Or use the provided PKGBUILD.
 
 ## Configuration
- 
 You'll need to start your music server first.
 
 First, edit the SOCKET_FILE macro in config.h to point to the socket file which will be created by mpv's ipc server. 
@@ -46,21 +39,25 @@ If you installed from the PKGBUILD/AUR, you can skip
 this part, since the PKGBUILD already sets this up to $XDG_CONFIG_HOME/catchme/ automatically.
 
 ```c
-// catchme/include/config.h
+// catchme/config.h
 
 // dont forget the quotes
 #define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"
 ```
-Compile and install.
+
+There are some other options you can customize here like MAX_VOLUME, once you're finished
+compile and install. You must install with elevated privileges.
+```shell
+$ make && sudo make install
+```
 
 You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
-
+ 
 Now, create a script to start the mpv server and make it executable.
 The important option is the --input-ipc-server and --video=no, the rest is up to you, 
 some recommended ones:
 
 ```shell
-# ./start_catchme
 #!/bin/sh
 
 # you can add your own options here
@@ -71,7 +68,6 @@ exec mpv --really-quiet --video=no --loop-playlist=inf --idle=yes \
 You can customize this script to reflect the start state of your mpv server.
 
 ```shell
-# ./start_catchme
 #!/bin/sh
 
 # mpv now will be paused on startup
@@ -81,7 +77,6 @@ exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
 ```
 
 ```shell
-# ./start_catchme
 #!/bin/sh
 
 # mpv will now start playing the last playlist you played
@@ -126,6 +121,39 @@ $ catchme format ";title; - ;artist; (;album;) [;status;]"
 Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 ```
 
+### Commands
+- play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
+- pause - Pauses
+- toggle - Toggle pause
+- seek `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the current music, you can also put
+  at the end to seek to that percentage
+- vol/volume `[+/-]VOL` - Increments `[+]`, decrements `[-]` or sets the absolute value of volume
+- current/curr - Returns the artist and title of the current song in the ;artist; - ;title;" format, if any of those metadatas are missing
+  returns the filename instead.
+- next [N] - Play next music, if N is specified, jump to N songs ahead
+- previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind
+- playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
+- print-playlist - Prints the whole playlist to stdout
+- mute - Toggle mute
+- repeat - Toggle repeat current music
+- add FILE/PATH - Appends the file or a file list of paths to the current playlist
+- remove POS - Removes the music at the given POS from the playlist
+- shuffle/shuf - Shuffles the playlist
+- status - Returns a status list of the current music
+- format ";FORMAT;" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
+- clear - Clears the playlist
+- write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
+ 
+Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
+
+### Format
+title, artist, album, album-artist,
+genre, playlist-count, playlist-pos, percent-pos,
+status, volume, mute, path, loop-file, speed
+
+TODO
+;time;, ;precise-time;, ;length;, ;remaining;
+
 ### Quirks
 Each catchme instance binds to one socket, this means that this doesn't work:
 ```shell
@@ -158,54 +186,7 @@ both "%" and `"$"` would violate 2) and 1), `"$"` would interfere with shell and
 
 after careful consideration I was left with '.' and ',', since I couldn't choose, I ended up with ';'.
 
-### Commands
-- play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
+### Todo
 
-- pause - Pauses
-
-- toggle - Toggle pause
-
-- seek `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the current music, you can also put
-  at the end to seek to that percentage
-
-- vol/volume `[+/-]VOL` - Increments `[+]`, decrements `[-]` or sets the absolute value of volume
-
-- current/curr - Returns the artist and title of the current song in the ;artist; - ;title;" format, if any of those metadatas are missing
-  returns the filename instead.
-
-- next [N] - Play next music, if N is specified, jump to N songs ahead
-
-- previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind
-
-- playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
-
-- print-playlist - Prints the whole playlist to stdout
-
-- mute - Toggle mute
-
-- repeat - Toggle repeat current music
-
-- add FILE/PATH - Appends the file or a file list of paths to the current playlist
-
-- remove POS - Removes the music at the given POS from the playlist
-
-- shuffle/shuf - Shuffles the playlist
-
-- status - Returns a status list of the current music
-
-- format ";FORMAT;" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
-
-- clear - Clears the playlist
-
-- write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
-
-### OBS
-Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
-
-### Format
-title, artist, album, album-artist,
-genre, playlist-count, playlist-pos, percent-pos,
-status, volume, mute, path, loop-file, speed
-
-TODO
-;time;, ;precise-time;, ;length;, ;remaining;
+- NAME_FORMAT to write to music_names_cache
+- Properly syncing with 'audio-reconfig' events
