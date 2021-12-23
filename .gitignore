@@ -1,5 +1,5 @@
 compile_commands.json
-
+*.tar.zst
 catchme/
 pkg/
 .cache/

@@ -2,7 +2,7 @@
 
 pkgname=catchme-git
 _pkgname=catchme
-pkgver=v1.0.r12.ga00618c
+pkgver=v1.0.r39.g91394cf
 pkgrel=1
 url='https://gitlab.com/kurenaiz/catchme'
 pkgdesc="mpc-like cli for mpv with no runtime dependencies"
@@ -23,7 +23,9 @@ prepare() {
 	mkdir -p "$my_home/catchme"
 
 	echo "Created $my_home/catchme folder"
-	sed -i include/config.h -e "s|/home/sakura/.config/|$my_home|"
+	cp config.def.h config.h
+	echo "Copying config.def.h to config.h"
+	sed -i config.h -e "s|/home/sakura/.config/|$my_home|"
 	echo "Changed catchme home to '$my_home'"
 }
 
