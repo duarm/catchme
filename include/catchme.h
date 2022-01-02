@@ -7,7 +7,7 @@ enum {
 	WRITE_BOTH,
 	WRITE_NAME,
 	WRITE_PATH,
-};
+} CM_Write;
 
 bool get_metadata(const char *name, char *result, int result_size);
 bool get_property_bool(const char *property, bool *result);
@@ -17,6 +17,7 @@ bool get_property_int(const char *property, int *result);
 char *get_artist_title();
 void catchme_write(const int to);
 void catchme_write_to(const char *path);
+void catchme_add_many(char *path[], int start, int count);
 void catchme_add(const char *path);
 void catchme_remove(const int id);
 void catchme_mute(void);

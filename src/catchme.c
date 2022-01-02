@@ -1,15 +1,17 @@
 #include "catchme.h"
-#include "util.h"
-#include "config.h"
-#include <json-c/json_object.h>
-#include <json-c/json_types.h>
-#include <json-c/json.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+
+#include "json-c/json_object.h"
+#include "json-c/json_types.h"
+#include "json-c/json.h"
+#include "util.h"
+#include "config.h"
 
 int fd = -1;
 // cmd buff is used to copy the messages to the socket
@@ -43,8 +45,7 @@ static void usage(void)
 	       "	current/curr - Returns ';artist; - ;title;' of the current music.\n"
 	       "	clear - Clears the playlist\n"
 	       "	shuffle/shuf - Shuffles the playlist\n"
-	       "	idle - TODO\n"
-	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing passed.\n"
+	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing given.\n"
 	       "OBS\n"
 	       "	partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume,\n"
 	       "	play=play, playl=playlist, playlist-p=playlist-play\n"
@@ -199,6 +200,13 @@ void catchme_playlist_clear(void)
 {
 	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_CLEAR);
 	send_to_socket(cmdbuff, cmdbuff);
+}
+
+void catchme_add_many(char *path[], int start, int count)
+{
+	for (int i = start; i < count; i++) {
+		catchme_add(path[i]);
+	}	
 }
 
 void catchme_add(const char *path)
@@ -618,6 +626,18 @@ void catchme_shuffle(void)
 	msleep(500);
 }
 
+static int get_consecutive_path_count(int count, int first_path_index, char *paths[])
+{
+	int result = 0;
+	for (int i = first_path_index; i < count; i++) {
+		if (paths[i][0] == '/')
+			result++;	
+		else 
+			break;
+	}
+	return result;
+}
+
 int main(int argc, char *argv[])
 {
 	int n;
@@ -728,7 +748,9 @@ int main(int argc, char *argv[])
 				return EXIT_FAILURE;
 			}
 			open_socket();
-			catchme_add(argv[i]);
+			int count = get_consecutive_path_count(argc, 2, argv);
+			catchme_add_many(argv, i, count);
+			i+= count;
 		} else if (!strncmp(argv[i], "write", 5)) {
 			open_socket();
 			catchme_write_to(argv[++i]);
