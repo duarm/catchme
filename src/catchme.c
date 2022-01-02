@@ -27,7 +27,7 @@ static void usage(void)
 	printf("usage: catchme [-s SOCKET_PATH] [-p PATHS_CACHE] [-n NAMES_CACHE] [-vl [-h] COMMAND ...\n"
 	       "socket path: %s\n"
 	       "COMMAND\n"
-	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.\n"
+	       "	play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist\n"
 	       "	pause - Pauses\n"
 	       "	toggle/tog - Toggle pause\n"
 	       "	seek [+/-]TIME[%%] - Increments [+], decrements [-], set relative (%%) or set the absolute time of the current music\n"
@@ -39,13 +39,13 @@ static void usage(void)
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
 	       "	format \";FORMAT;\" - Returns the string formatted accordingly, with information from the currently playing music\n"
-	       "	add PATH - Apends the music in the given path to the playlist\n"
+	       "	add PATH - Appends each path to the playlist\n"
 	       "	remove/rem POS - Removes the music at the given POS in the playlist\n"
 	       "	stat/status - Returns a status list of the current music\n"
 	       "	current/curr - Returns ';artist; - ;title;' of the current music.\n"
 	       "	clear - Clears the playlist\n"
 	       "	shuffle/shuf - Shuffles the playlist\n"
-	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing given.\n"
+	       "	write [path/name] - Writes to music_names_cache, music_paths_cache or both if nothing given\n"
 	       "OBS\n"
 	       "	partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume,\n"
 	       "	play=play, playl=playlist, playlist-p=playlist-play\n"
@@ -206,7 +206,7 @@ void catchme_add_many(char *path[], int start, int count)
 {
 	for (int i = start; i < count; i++) {
 		catchme_add(path[i]);
-	}	
+	}
 }
 
 void catchme_add(const char *path)
@@ -626,13 +626,14 @@ void catchme_shuffle(void)
 	msleep(500);
 }
 
-static int get_consecutive_path_count(int count, int first_path_index, char *paths[])
+static int get_consecutive_path_count(int count, int first_path_index,
+				      char *paths[])
 {
 	int result = 0;
 	for (int i = first_path_index; i < count; i++) {
 		if (paths[i][0] == '/')
-			result++;	
-		else 
+			result++;
+		else
 			break;
 	}
 	return result;
@@ -645,6 +646,15 @@ int main(int argc, char *argv[])
 		if (!strncmp(argv[i], "tog", 3)) { // tog/toggle
 			open_socket();
 			catchme_toggle();
+		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
+			i++;
+			if (i == argc) {
+				fprintf(stderr,
+					"vol requires 1 parameter, none given.\n");
+				return EXIT_FAILURE;
+			}
+			open_socket();
+			catchme_volume(argv[i]);
 		} else if (!strncmp(argv[i], "next", 4)) {
 			i++;
 			if (i == argc) {
@@ -682,15 +692,6 @@ int main(int argc, char *argv[])
 			}
 			open_socket();
 			catchme_seek(argv[i]);
-		} else if (!strncmp(argv[i], "vol", 3)) { // vol/volume
-			i++;
-			if (i == argc) {
-				fprintf(stderr,
-					"vol requires 1 parameter, none given.\n");
-				return EXIT_FAILURE;
-			}
-			open_socket();
-			catchme_volume(argv[i]);
 		} else if (!strncmp(argv[i], "curr", 4)) { // curr/current
 			open_socket();
 			catchme_current();
@@ -708,9 +709,6 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "invalid integer for play\n");
 				return EXIT_FAILURE;
 			}
-		} else if (!strncmp(argv[i], "pause", 5)) {
-			open_socket();
-			catchme_pause();
 		} else if (!strncmp(argv[i], "format", 6)) {
 			i++;
 			if (i == argc) {
@@ -720,6 +718,9 @@ int main(int argc, char *argv[])
 			}
 			open_socket();
 			catchme_format(argv[i]);
+		} else if (!strncmp(argv[i], "pause", 5)) {
+			open_socket();
+			catchme_pause();
 		} else if (!strncmp(argv[i], "shuf", 4)) { // shuf/shuffle
 			open_socket();
 			catchme_shuffle();
@@ -750,7 +751,7 @@ int main(int argc, char *argv[])
 			open_socket();
 			int count = get_consecutive_path_count(argc, 2, argv);
 			catchme_add_many(argv, i, count);
-			i+= count;
+			i += count - 1;
 		} else if (!strncmp(argv[i], "write", 5)) {
 			open_socket();
 			catchme_write_to(argv[++i]);
@@ -766,7 +767,7 @@ int main(int argc, char *argv[])
 				return EXIT_FAILURE;
 			open_socket();
 			catchme_playlist(argv[i]);
-		} else if (!strncmp(argv[i], "print-playlist", 14)) {
+		} else if (!strncmp(argv[i], "print-playlist", 5)) {
 			open_socket();
 			catchme_print_playlist();
 		} else if (!strncmp(argv[i], "-h", 2)) {
