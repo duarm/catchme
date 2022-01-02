@@ -136,7 +136,7 @@ Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 - print-playlist - Prints the whole playlist to stdout
 - mute - Toggle mute
 - repeat - Toggle repeat current music
-- add FILE/PATH - Appends the file or a file list of paths to the current playlist
+- add FILE/PATH - Appends each file, or file containing a list of files, to the playlist
 - remove POS - Removes the music at the given POS from the playlist
 - shuffle/shuf - Shuffles the playlist
 - status - Returns a status list of the current music
