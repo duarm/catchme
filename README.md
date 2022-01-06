@@ -96,20 +96,26 @@ You can now communicate with your mpv server through catchme. See Usage section 
 ## Usage & Examples
 usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` COMMAND
 ```shell
-$ catchme play 4 # changes current music to the one at index 4
+$ catchme play 2 # changes current music to the one at index 2
 $ catchme play # unpauses
-$ catchme next # plays next song (index 5)
 $ catchme vol -10 # decrease volume by 10
 $ catchme vol 80 # set vol to 80
 $ catchme seek +10 # seek +10 seconds
 $ catchme seek 50% # seek to the middle of the music
-$ catchme format ";artist; - ;title; [;status;]" # return formatted info about the current song
+$ catchme add /home/sakura/sailor_moon/* # adding all musics on sailor_moon folder, obs: shell globbing required
+$ catchme rem 2 # removes the music at position 2 in the playlist
+$ catchme rem $(($(catchme format ";playlist-count;")-1)) # removes the last music from the playlist
+$ catchme next # plays next song (index 3)
+$ catchme prev # plays next song (index 2)
+$ catchme next 3 # jump 3 songs (index 5)
 $ catchme mute # mutes
 $ catchme mute # unmutes
 $ catchme toggle # pauses
 $ catchme toggle # unpauses
+$ catchme repeat # loop current music
+$ catchme repeat # stop looping
 # clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths cache
-$ catchme clear && catchme playlist /path/to/my/playlist && catchme shuff && catchme write
+$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme write
 $ tagutil $(catchme format ";path;")
 # /home/sakura/music/sailor_moon/La_Soldier.opus
 ---
@@ -121,28 +127,31 @@ $ catchme format ";artist; - ;title; (;album;) [;status;]"
 Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 ```
 
+### Extensions
+[catchmenu](https://gitlab.com/kurenaiz/catchmenu) - dmenu script for selection music
+
 ### Commands
-- play [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
-- pause - Pauses
-- toggle - Toggle pause
-- seek `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the current music, you can also put
+- **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
+- **pause** - Pauses
+- **toggle** - Toggle pause
+- **seek** `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the current music, you can also put
   at the end to seek to that percentage
-- vol/volume `[+/-]VOL` - Increments `[+]`, decrements `[-]` or sets the absolute value of volume
-- current/curr - Returns the artist and title of the current song in the ;artist; - ;title;" format, if any of those metadatas are missing
+- **vol/volume** `[+/-]VOL` - Increments `[+]`, decrements `[-]` or sets the absolute value of volume
+- **current/curr** - Returns the artist and title of the current song in the ;artist; - ;title;" format, if any of those metadatas are missing
   returns the filename instead.
-- next [N] - Play next music, if N is specified, jump to N songs ahead
-- previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind
-- playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
-- print-playlist - Prints the whole playlist to stdout
-- mute - Toggle mute
-- repeat - Toggle repeat current music
-- add FILE/PATH - Appends each file, or file containing a list of files, to the playlist
-- remove POS - Removes the music at the given POS from the playlist
-- shuffle/shuf - Shuffles the playlist
-- status - Returns a status list of the current music
-- format ";FORMAT;" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
-- clear - Clears the playlist
-- write [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
+- **next [N]** - Play next music, if N is specified, jump to N songs ahead
+- **previous/prev** [N] - Play the previous song, if N is specified, jump to N songs behind
+- **playlist** FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
+- **print-playlist** - Prints the whole playlist to stdout
+- **mute** - Toggle mute
+- **repeat** - Toggle repeat current music
+- **add** FILE/PATHS - Appends each file, or file containing a list of files, to the playlist
+- **remove** POS - Removes the music at the given POS from the playlist
+- **shuffle/shuf** - Shuffles the playlist
+- **status** - Returns a status list of the current music
+- **format** ";FORMAT;" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
+- **clear** - Clears the playlist
+- **write** [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
  
 Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, tog=toggle, vol=volume, play=play, playl=playlist, playlist-p=playlist-play
 
