@@ -128,7 +128,7 @@ Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 ```
 
 ### Extensions
-[catchmenu](https://gitlab.com/kurenaiz/catchmenu) - dmenu script for selection music
+[catchmenu](https://gitlab.com/kurenaiz/catchmenu) - dmenu script for selecting music
 
 ### Commands
 - **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
