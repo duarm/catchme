@@ -221,7 +221,18 @@ void catchme_add(const char *path)
 
 void catchme_playlist(const char *path)
 {
-	snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
+	databuff[0]='\0';
+	if (path[0] != '/') {
+		const char* cwd = getcwd(databuff, DATABUF_SIZE);
+		printf("%s\n", cwd);
+		strncpy(databuff, cwd, DATABUF_SIZE - 1);
+		strncat(databuff, "/", 2);
+		strncat(databuff, path, DATABUF_SIZE - 1);
+		snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, databuff);
+	}
+	else
+		snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
+	printf("%s\n", cmdbuff);
 	send_to_socket(cmdbuff, cmdbuff);
 	msleep(500);
 }
@@ -821,3 +832,4 @@ int main(int argc, char *argv[])
 
 	return EXIT_SUCCESS;
 }
+

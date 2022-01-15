@@ -72,7 +72,8 @@ uninstall:
 	# rm -f $(DESTDIR)$(MANPREFIX)/man1/$(PROJ_NAME).1
 
 clean:
-	rm -fv $(EXE) $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d
-	rmdir $(OBJ_DIR)
+	rm -fv $(OUT_DIR)/* $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d
+	rmdir $(OBJ_DIR) 2>/dev/null
+	rmdir $(OUT_DIR) 2>/dev/null
 
 -include $(OBJ:.o=.d)
