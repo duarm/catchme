@@ -110,7 +110,7 @@ bool get_metadata(const char *name, char *result, int result_size)
 		struct json_object *res = json_tokener_parse(cmdbuff);
 		const char *error = json_object_get_string(
 			json_object_object_get(res, "error"));
-		if (!strncmp(error, "success", 7)) {
+		if (error != NULL && !strncmp(error, "success", 7)) {
 			const char *str = json_object_get_string(
 				json_object_object_get(res, "data"));
 			strncpy(result, str, result_size - 1);
@@ -221,10 +221,8 @@ void catchme_add(const char *path)
 
 void catchme_playlist(const char *path)
 {
-	databuff[0]='\0';
 	if (path[0] != '/') {
 		const char* cwd = getcwd(databuff, DATABUF_SIZE);
-		printf("%s\n", cwd);
 		strncpy(databuff, cwd, DATABUF_SIZE - 1);
 		strncat(databuff, "/", 2);
 		strncat(databuff, path, DATABUF_SIZE - 1);
@@ -232,7 +230,6 @@ void catchme_playlist(const char *path)
 	}
 	else
 		snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
-	printf("%s\n", cmdbuff);
 	send_to_socket(cmdbuff, cmdbuff);
 	msleep(500);
 }
