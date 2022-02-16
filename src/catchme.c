@@ -222,13 +222,12 @@ void catchme_add(const char *path)
 void catchme_playlist(const char *path)
 {
 	if (path[0] != '/') {
-		const char* cwd = getcwd(databuff, DATABUF_SIZE);
+		const char *cwd = getcwd(databuff, DATABUF_SIZE);
 		strncpy(databuff, cwd, DATABUF_SIZE - 1);
 		strncat(databuff, "/", 2);
 		strncat(databuff, path, DATABUF_SIZE - 1);
 		snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, databuff);
-	}
-	else
+	} else
 		snprintf(cmdbuff, SOCKETBUF_SIZE, PLAYLIST_LOAD, path);
 	send_to_socket(cmdbuff, cmdbuff);
 	msleep(500);
