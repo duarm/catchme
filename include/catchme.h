@@ -15,6 +15,7 @@ bool get_property_string(const char *property, char *result, int result_size);
 bool get_property_double(const char *property, double *result);
 bool get_property_int(const char *property, int *result);
 char *get_artist_title();
+
 void catchme_write(const int to);
 void catchme_write_to(const char *path);
 void catchme_add_many(char *path[], int start, int count);
@@ -31,7 +32,6 @@ void catchme_play_index(const int index);
 void catchme_status(void);
 void catchme_current(void);
 void catchme_pause(void);
-void catchme_prev(const int n);
 void catchme_next(const int n);
 void catchme_volume(const char *vol);
 void catchme_shuffle(void);

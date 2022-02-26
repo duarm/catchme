@@ -34,8 +34,7 @@ static void usage(void)
 	       "	volume/vol [+/-]VOL - Increments [+], decrements [-] or sets the absolute volume\n"
 	       "	next [N] - Play next music, if N is specified, jump to N songs ahead\n"
 	       "	previous/prev [N] - Play the previous song, if N is specified, jump to N songs behind\n"
-	       "	print-playlist - Prints the current playlist to stdout\n"
-	       "	playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE\n"
+	       "	playlist FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE. If not FILE/PATH, prints the playlist\n"
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
 	       "	format \";FORMAT;\" - Returns the string formatted accordingly, with information from the currently playing music\n"
@@ -472,8 +471,9 @@ void catchme_status(void)
 	int pos = 0;
 	get_property_int("playlist-pos", &pos);
 
-	int playlist_len = 0;
-	get_property_int("playlist-count", &playlist_len);
+	int playlist_cnt = 0;
+	get_property_int("playlist-count", &playlist_cnt);
+	playlist_cnt--;
 
 	int percent_pos = 0;
 	get_property_int("percent-pos", &percent_pos);
@@ -493,7 +493,7 @@ void catchme_status(void)
 	printf("%s - %s\n"
 	       "[%s] #%d/%d %.2f/%.2f (%d%%)\n"
 	       "speed: %.2fx volume: %d%% muted: %d loop: %s\n",
-	       artist, title, status ? "paused" : "playing", pos, playlist_len,
+	       artist, title, status ? "paused" : "playing", pos, playlist_cnt,
 	       0.0, 0.0, percent_pos, speed, vol, mute, databuff);
 }
 
@@ -605,24 +605,20 @@ void catchme_pause(void)
 	send_to_socket(cmdbuff, cmdbuff);
 }
 
-void catchme_prev(const int n)
-{
-	int current = 0;
-	get_property_int("playlist-pos", &current);
-
-	if (current == 0)
-		return;
-
-	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current - 1);
-	send_to_socket(cmdbuff, cmdbuff);
-}
-
 void catchme_next(const int n)
 {
-	int current = 0;
-	get_property_int("playlist-pos", &current);
+	int next = 0;
+	get_property_int("playlist-pos", &next);
+	next += n;
+	int playlist_count = 0;
+	get_property_int("playlist-count", &playlist_count);
 
-	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, current + n);
+	if (next > playlist_count - 1)
+		next = 0;
+	else if (next < 0)
+		next = playlist_count - 1;
+
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_PLAYING_MSG, next);
 	send_to_socket(cmdbuff, cmdbuff);
 }
 
@@ -681,11 +677,11 @@ int main(int argc, char *argv[])
 			if (i == argc) {
 				// if no argument, previous music
 				open_socket();
-				catchme_prev(1);
+				catchme_next(-1);
 			} else if (get_int(argv[i], &n)) {
 				// otherwise, jump to 'current - n'
 				open_socket();
-				catchme_prev(n);
+				catchme_next(-n);
 			} else {
 				fprintf(stderr, "invalid integer for prev\n");
 				return EXIT_FAILURE;
@@ -770,13 +766,11 @@ int main(int argc, char *argv[])
 			catchme_repeat();
 		} else if (!strncmp(argv[i], "playlist", 5)) {
 			i++;
+			open_socket();
 			if (i == argc)
-				return EXIT_FAILURE;
-			open_socket();
-			catchme_playlist(argv[i]);
-		} else if (!strncmp(argv[i], "print-playlist", 5)) {
-			open_socket();
-			catchme_print_playlist();
+				catchme_print_playlist();
+			else
+				catchme_playlist(argv[i]);
 		} else if (!strncmp(argv[i], "-h", 2)) {
 			usage();
 			return EXIT_SUCCESS;

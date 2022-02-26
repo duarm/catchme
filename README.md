@@ -55,8 +55,7 @@ Sailor Moon - La Soldier (Sailor Moon OST) [paused]
   returns the filename instead.
 - **next [N]** - Play next music, if N is specified, jump to N songs ahead
 - **previous/prev** [N] - Play the previous song, if N is specified, jump to N songs behind
-- **playlist** FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
-- **print-playlist** - Prints the whole playlist to stdout
+- **playlist** FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE. If no PATH/FILE given, print playlist
 - **mute** - Toggle mute
 - **repeat** - Toggle repeat current music
 - **add** FILE/PATHS - Appends each file, or file containing a list of files, to the playlist
@@ -97,6 +96,8 @@ Or use the provided PKGBUILD.
 
 ## Configuration
 ### catchme
+You just need to start mpv with an ipc server, and tell catchme where's the socket file located, step-by-step below.
+
 First, edit the SOCKET_FILE macro in config.h to point to the socket file which will be created by mpv's ipc server.
 On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket.
 
@@ -111,7 +112,7 @@ this part, since the PKGBUILD already sets this up to $XDG_CONFIG_HOME/catchme/ 
 ```
 
 There are some other options you can customize here like MAX_VOLUME, once you're finished
-compile and install. You must install with elevated privileges.
+compile and install.
 ```shell
 $ make && sudo make install
 ```
@@ -159,6 +160,7 @@ exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
 
 
 Execute this file to start the server, place this on your start script to auto run when booting up.
+
 See wiki section for Quirks, Why ";" for format, Todo, and more.
 
 ### Extensions

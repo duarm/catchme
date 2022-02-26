@@ -7,8 +7,6 @@ PROJ_NAME = catchme
 PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
 OUT_DIR := out
-SRC_DIR := src
-OBJ_DIR := obj
 
 # RELEASE or DEBUG
 BUILD_MODE ?= RELEASE
@@ -27,8 +25,8 @@ LDFLAGS := -L/usr/lib/musl/lib/ -Llib/ -Wl,--gc-sections
 LDLIBS   := -static /usr/lib/musl/lib/libc.a -lm -ljson-c
 
 EXE := $(OUT_DIR)/$(PROJ_NAME)
-SRC := $(wildcard $(SRC_DIR)/*.c)
-OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+SRC := $(wildcard ./*.c)
+OBJ := $(SRC:./%.c=./%.o)
 
 ifeq ($(BUILD_MODE),DEBUG)
 	#  -g				include debug information on compilation
@@ -50,10 +48,10 @@ $(EXE): $(OBJ) | $(OUT_DIR)
 config.h:
 	cp config.def.h $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c config.h | $(OBJ_DIR)
+%.o: %.c config.h | $(OBJ_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(OUT_DIR) $(OBJ_DIR):
+$(OUT_DIR):
 	mkdir -p $@
 
 install: all
@@ -72,7 +70,7 @@ uninstall:
 	# rm -f $(DESTDIR)$(MANPREFIX)/man1/$(PROJ_NAME).1
 
 clean:
-	rm -fv $(OUT_DIR)/* $(OBJ_DIR)/*.o $(OBJ_DIR)/*.d
+	rm -fv $(OUT_DIR)/* *.o $(OBJ_DIR)/*.d
 	rmdir $(OBJ_DIR) 2>/dev/null
 	rmdir $(OUT_DIR) 2>/dev/null
 
