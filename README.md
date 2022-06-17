@@ -1,14 +1,11 @@
 # Catch you, Catch me (catchme)
 
-Catch You, Catch me is a cli interface to communicate with a mpv server
-through an unix socket, written in pure and simple c99.
+Catch me is a CLI interface to communicate with a mpv ipc socket, written in pure and simple c99.
 
 ## More About
-I made this because mpvc was super slow due to being a shell script.
-This program doesn't have any runtime dependencies, everything was static linked. This project was created for my personal use and I found it useful enough to share.
+I made this because mpvc was super slow due to being a shell script, and I wanted to use mpv as a music player daemon.
 
-The idea is to use this as a controller to mpv, mpv would be the daemon and server. More complex behaviour would
-be accomplished by adding a lua plugin to mpv.
+The idea is to use this as a controller to mpv, mpv would be the daemon and server. This only sends a command, and mpv reacts. Out of the box you have all of mpv default commands at your disposal, but you can extend its functionality through a [mpv script](https://gitlab.com/kurenaiz/mpv-catchme) 
 
 ## Usage & Examples
 usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` COMMAND
@@ -19,7 +16,7 @@ $ catchme vol -10 # decrease volume by 10
 $ catchme vol 80 # set vol to 80
 $ catchme seek +10 # seek +10 seconds
 $ catchme seek 50% # seek to the middle of the music
-$ catchme add /home/sakura/sailor_moon/* # adding all musics on sailor_moon folder, obs: shell globbing required
+$ catchme add /home/sakura/sailor_moon/* # adding all musics on sailor_moon folder, obs: this makes use of shell glob, /* is not a feature of catchme
 $ catchme rem 2 # removes the music at position 2 in the playlist
 $ catchme rem $(($(catchme format ";playlist-count;")-1)) # removes the last music from the playlist
 $ catchme next # plays next song (index 3)
@@ -31,8 +28,8 @@ $ catchme toggle # pauses
 $ catchme toggle # unpauses
 $ catchme repeat # loop current music
 $ catchme repeat # stop looping
-# clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths cache
-$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme write
+# clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths file
+$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme -c write
 $ tagutil $(catchme format ";path;")
 # /home/sakura/music/sailor_moon/La_Soldier.opus
 ---
@@ -122,48 +119,30 @@ You can, alternatively, alias the catchme command with the -s flag passing the p
 ### mpv
 Create a script to start the mpv server and make it executable.
 
-```shell
-#!/bin/sh
-
-# you can add your own options here
-exec mpv --really-quiet --video=no --loop-playlist=inf --idle=yes \
-	--load-scripts=no \
-        --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
-        /path/to/my/musics
-```
 You can customize this script to reflect the start state of your mpv server.
-
 ```shell
 #!/bin/sh
 
-# mpv now will be paused on startup
-exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
-	--load-scripts=no \
+# you can add your own options here, check the mpv documentation, some good ones
+# --pause, start paused
+# --shuffle, shuffles the playlist
+# --volume=X, starts with volume set to X
+mpv --really-quiet --video=no --idle=yes --load-scripts=no \
+        --pause \ 
         --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
+        --loop-playlist=inf 
         /path/to/my/musics
 ```
 
-```shell
-#!/bin/sh
+Use your scripting power to do cool stuff.
 
-# mpv will now start playing the last playlist you played
-musics="path/to/my/musics"
-[ -e "$XDG_CONFIG_HOME/catchme/music_path_cache" ] && \
-	musics="--playlist=$XDG_CONFIG_HOME/catchme/music_path_cache"
-
-exec mpv --pause --really-quiet --video=no --loop-playlist=inf --idle=yes \
-	--load-scripts=no \
-        --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
-	$musics
-```
-
-
-
-Execute this file to start the server, place this on your start script to auto run when booting up.
+Now just execute this file to start the server, place this on your start script to auto run when booting up.
 
 See wiki section for Quirks, Why ";" for format, Todo, and more.
 
 ### Extensions
 [catchmenu](https://gitlab.com/kurenaiz/catchmenu) - dmenu script for selecting music
+
+[mpv-catchme](https://gitlab.com/kurenaiz/mpv-catchme) - catchme mpv script
 
 [catchme-scripts](https://gitlab.com/kurenaiz/catchme-scripts) - general scripts which use catchme
