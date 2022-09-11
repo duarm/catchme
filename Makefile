@@ -4,6 +4,7 @@
 
 CC = musl-gcc
 PROJ_NAME = catchme
+SRC_DIR= $(PROJ_NAME)/
 PREFIX = /usr/local
 MANPREFIX = $(PREFIX)/share/man
 OUT_DIR := out
@@ -18,15 +19,15 @@ BUILD_MODE ?= RELEASE
 #  -Werror=pointer-arith    catch unportable code that does direct arithmetic on void pointers
 CFLAGS := -Wall -std=c99 -D_DEFAULT_SOURCE -Werror=pointer-arith
 # C Pre Processor Flags
-CPPFLAGS := -I. -Iinclude -Iinclude/json-c
+CPPFLAGS := -I. -I./catchme/external/ -I./catchme/external/json-c/ 
 # -L linker flags
 LDFLAGS := -L/usr/lib/musl/lib/ -Llib/ -Wl,--gc-sections
 # -l lib flags
 LDLIBS   := -static /usr/lib/musl/lib/libc.a -lm -ljson-c
 
 EXE := $(OUT_DIR)/$(PROJ_NAME)
-SRC := $(wildcard ./*.c)
-OBJ := $(SRC:./%.c=./%.o)
+SRC := $(wildcard $(SRC_DIR)/*.c)
+OBJ := $(SRC:$(SRC_DIR)/%.c=$(SRC_DIR)/%.o)
 
 ifeq ($(BUILD_MODE),DEBUG)
 	#  -g				include debug information on compilation

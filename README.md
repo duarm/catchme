@@ -8,7 +8,7 @@ I made this because mpvc was super slow due to being a shell script, and I wante
 The idea is to use this as a controller to mpv, mpv would be the daemon and server. This only sends a command, and mpv reacts. Out of the box you have all of mpv default commands at your disposal, but you can extend its functionality through a [mpv script](https://gitlab.com/kurenaiz/mpv-catchme) 
 
 ## Usage & Examples
-usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` COMMAND
+usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` `[-c]` COMMAND
 ```shell
 $ catchme play 2 # changes current music to the one at index 2
 $ catchme play # unpauses
@@ -29,7 +29,7 @@ $ catchme toggle # unpauses
 $ catchme repeat # loop current music
 $ catchme repeat # stop looping
 # clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths file
-$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme -c write
+$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme -c write-playlist
 $ tagutil $(catchme format ";path;")
 # /home/sakura/music/sailor_moon/La_Soldier.opus
 ---
@@ -61,7 +61,7 @@ Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 - **status** - Returns a status list of the current music
 - **format** ";FORMAT;" - Returns the string formatted accordingly, with information from the currently playing music (see Format below)
 - **clear** - Clears the playlist
-- **write** [path/name] - Writes to music_names_cache if 'name' is specified, to music_paths_cache if 'path', otherwise write to both.
+- **CUSTOMCOMMANDS** - (see Custom Commands below)
 
 Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, vol=volume, play=play, playl=playlist
 
@@ -69,6 +69,10 @@ Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, vol
 title, artist, album, album-artist,
 genre, playlist-count, playlist-pos, percent-pos,
 status, volume, mute, path, loop-file, speed
+
+### Custom Commands
+you can send custom commands to mpv with the `-c` option
+
 
 ## Build & Install
 The recommended way to install this package is to keep a copy of it by cloning the repository, copying
