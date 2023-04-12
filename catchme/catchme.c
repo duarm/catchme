@@ -681,8 +681,12 @@ int cm_start(int argc, char *argv[], char *envp[])
 
 	if (access(databuff, F_OK) == 0) {
 		execve(databuff, &argv[1], envp);
+	} else if (access("/usr/share/catchme/start", F_OK) == 0) {
+		// fallback to /usr/share/catchme/start
+		execve("/usr/share/catchme/start", &argv[1], envp);
 	} else {
-		printf("%s not exists", databuff);
+		printf("%s and /usr/share/catchme/start does not exist. (they should)", databuff);
+		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }

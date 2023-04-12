@@ -2,7 +2,7 @@
 
 pkgname=catchme-git
 _pkgname=catchme
-pkgver=v1.0.r39.g91394cf
+pkgver=v1.0.r58.g6bbe98a
 pkgrel=1
 url='https://gitlab.com/kurenaiz/catchme'
 pkgdesc="mpc-like cli for mpv with no runtime dependencies"
@@ -37,4 +37,5 @@ package() {
 	make PREFIX="/usr" DESTDIR="$pkgdir" install
 	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$_pkgname/LICENSE"
 	install -Dm0644 catchme.desktop $pkgdir/usr/share/applications/catchme.desktop
+	install -Dm0755 start $pkgdir/usr/share/catchme/start
 }
