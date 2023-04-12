@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# we search for musics on XDG_MUSIC_DIR by default, change below
+# for another path
+MUSIC_DIR="$XDG_MUSIC_DIR"
+	# --script="$XDG_CONFIG_HOME/mpv/scripts/scripts.disable/autoload.lua" \
+if [ "$1" = "debug" ]; then
+	find "$MUSIC_DIR" \( -name "*.mp3" \
+		-o -name "*.mkv" \
+		-o -name "*.ogg" \
+		-o -name "*.flac" \
+		-o -name "*.m4a" \
+		-o -name "*.opus" \) \
+		! -path "sounds" \
+		-type f \
+	| mpv \
+		--volume=60 \
+		--video=no \
+		--pause \
+		--loop-playlist=inf \
+		--term-osd=no \
+		--idle=yes \
+		--shuffle \
+		--load-scripts=no \
+		--script="$XDG_CONFIG_HOME/mpv/scripts/scripts.disable/mpv-catchme/" \
+		--input-ipc-server=/home/sakura/.config/catchme/socket \
+		--playlist=-
+else
+	pkill -f "mpv.*catchme-socket"
+	find "$MUSIC_DIR" \( -name "*.mp3" \
+		-o -name "*.mkv" \
+		-o -name "*.ogg" \
+		-o -name "*.flac" \
+		-o -name "*.m4a" \
+		-o -name "*.opus" \) \
+		! -path "sounds" \
+		-type f \
+	| nohup mpv --really-quiet \
+		--volume=60 \
+		--video=no \
+		--pause \
+		--loop-playlist=inf \
+		--term-osd=no \
+		--idle=yes \
+		--shuffle \
+		--load-scripts=no \
+		--script="$XDG_CONFIG_HOME/mpv/scripts/scripts.disable/mpv-catchme/" \
+		--input-ipc-server=/home/sakura/.config/catchme/catchme-socket \
+		--playlist=- >/dev/null 2>&1 &
+fi
+
