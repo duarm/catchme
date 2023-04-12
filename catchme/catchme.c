@@ -72,7 +72,8 @@ static void cm_toggle(void);
 static void cm_play(void);
 static void cm_format(char *format);
 static void cm_seek(const char *seek);
-// static void cm_idle(void); TODO
+// TODO:
+static void cm_observe(void);
 static void cm_print_playlist(void);
 static void cm_play_index(const int index);
 static void cm_status(void);
@@ -87,6 +88,8 @@ int fd = -1;
 char cmdbuff[SOCKETBUF_SIZE];
 // databuff is used to store general data
 char databuff[DATABUF_SIZE];
+// socket paths are capped at 108 bytes
+char socket_path[108];
 
 static void usage(void)
 {
@@ -94,6 +97,8 @@ static void usage(void)
 	       "version: " VERSION "\n"
 	       "socket path: %s\n"
 	       "COMMAND\n"
+	       "	start - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start\n"
+	       "	stop - TODO:Kills mpv connect to catchme socket\n"
 	       "	play [POS] - Unpauses. if [POS], plays the music at the given POS in the playlist\n"
 	       "	pause - Pauses the currently playing song\n"
 	       "	tog - Toggle pause\n"
@@ -104,7 +109,7 @@ static void usage(void)
 	       "	playlist [FILE/PATH] - Prints the playlist. If [FILE/PATH], REPLACES the current playlist with the one from the given PATH or FILE. \n"
 	       "	mute - Toggle mute\n"
 	       "	repeat - Toggle repeat current music\n"
-	       "	format \";FORMAT;\" - Returns the string formatted accordingly, with information from the currently playing music\n"
+	       "	format \";FORMAT;\" - Returns the string formatted accordingly, with information from the currently playing music. See FORMAT section.\n"
 	       "	add [PATH]... - Appends each PATH to the playlist\n"
 	       "	rem [POS]... - Removes the music at the given POS in the playlist\n"
 	       "	stat - Returns a status list of the current music\n"
@@ -112,15 +117,15 @@ static void usage(void)
 	       "	clear - Clears the playlist\n"
 	       "	shuf - Shuffles the playlist\n"
 	       "FLAGS \n"
-	       "	-s SOCKET_PATH - Set socket path to SOCKET_PATH (must be specified before command)"
-	       "	-c COMMAND - Sends a custom command to all plugins"
-	       "	--cm COMMAND - Sends a custom command to mpv-catchme lua plugin"
-	       "	-h - prints this message"
+	       "	-s SOCKET_PATH - Set socket path to SOCKET_PATH (must be specified before command)\n"
+	       "	-c COMMAND - Sends a custom command to all plugins\n"
+	       "	--cm COMMAND - Sends a custom command to mpv-catchme lua plugin\n"
+	       "	-h - prints this message\n"
 	       "EXAMPLES\n"
 	       "	catchme format ';artist; - ;title; [;path;]'\n"
 	       "	catchme playlist ~/music/\n"
 	       "	catchme add ~/music/cardcaptor_sakura/*\n"
-	       "	catchme -c write-playlist #(requires mpv-catchme mpv lua plugin)\n"
+	       "	catchme --cm write-playlist #(requires mpv-catchme mpv lua plugin)\n"
 	       "	catchme seek 50%%\n"
 	       "	catchme vol -10\n"
 	       "OBS\n"
@@ -129,9 +134,7 @@ static void usage(void)
 	       "FORMAT\n"
 	       "  name, title, artist, album, album-artist,\n"
 	       "  genre, playlist-count, playlist-pos, percent-pos,\n"
-	       "  status, volume, mute, path, speed, loop-file\n"
-	       "TODO\n"
-	       "  time, precise_time, length, remaining",
+	       "  status, volume, mute, path, speed, loop-file\n",
 	       socket_path);
 }
 
@@ -323,6 +326,10 @@ void cm_remove(const int id)
 	send_to_socket(cmdbuff, cmdbuff);
 	if (id == rem)
 		msleep(500);
+}
+
+static void cm_observe(void)
+{
 }
 
 void cm_repeat(void)
@@ -620,19 +627,69 @@ void cm_pause(void)
 	send_to_socket(cmdbuff, cmdbuff);
 }
 
+void cm_shuffle(void)
+{
+	snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG);
+	send_to_socket(cmdbuff, databuff);
+}
+
 void cm_next(const int n)
 {
 	if (n == 1)
 		send_to_socket(PLAYLIST_NEXT, databuff);
 	else if (n == -1)
 		send_to_socket(PLAYLIST_PREV, databuff);
+	else {
+		int curr_pos;
+		int pl_cnt;
+		get_property_int("playlist-playing-pos", &curr_pos);
+		get_property_int("playlist-count", &pl_cnt);
+		curr_pos += n;
+		if (curr_pos < 0) {
+			curr_pos = 0;
+			cm_play_index(curr_pos);
+			send_to_socket(PLAYLIST_PREV, databuff);
+		} else if (curr_pos > pl_cnt) {
+			curr_pos = pl_cnt;
+			cm_play_index(curr_pos);
+			send_to_socket(PLAYLIST_NEXT, databuff);
+		}
+	}
 }
 
-void cm_shuffle(void)
+int cm_start(int argc, char *argv[], char *envp[])
 {
-	snprintf(cmdbuff, SOCKETBUF_SIZE, SHUFFLE_PLAYLIST_MSG);
-	send_to_socket(cmdbuff, databuff);
-	msleep(500);
+	if (!getenv("XDG_CONFIG_HOME")) {
+		fprintf(stderr, "XDG_CONFIG_HOME not set.\n");
+	} else {
+		if (snprintf(databuff, DATABUF_SIZE, "%s",
+			     getenv("XDG_CONFIG_HOME")) >= DATABUF_SIZE) {
+			exit(1);
+		}
+		strncat(databuff, "/catchme/start", 108);
+	}
+
+	if (!getenv("HOME")) {
+		fprintf(stderr, "HOME not set.\n");
+	} else {
+		if (snprintf(databuff, DATABUF_SIZE, "%s", getenv("HOME")) >=
+		    DATABUF_SIZE) {
+			exit(1);
+		}
+		strncat(databuff, "/.config/catchme/start", 108);
+	}
+
+	if (access(databuff, F_OK) == 0) {
+		execve(databuff, &argv[1], envp);
+	} else {
+		printf("%s not exists", databuff);
+	}
+	return EXIT_SUCCESS;
+}
+
+int cm_stop(void)
+{
+	return EXIT_SUCCESS;
 }
 
 int handle_custom_function(bool catchme, int argc, char *argv[], int index)
@@ -661,9 +718,35 @@ static int get_consecutive_path_count(int count, int first_path_index,
 	return result;
 }
 
-int main(int argc, char *argv[])
+static void find_paths(void)
 {
-	int n;
+	if (!getenv("XDG_CONFIG_HOME")) {
+		fprintf(stderr, "XDG_CONFIG_HOME not set.\n");
+	} else {
+		if (snprintf(databuff, DATABUF_SIZE, "%s",
+			     getenv("XDG_CONFIG_HOME")) >= DATABUF_SIZE) {
+			exit(1);
+		}
+		memcpy(socket_path, databuff, 108);
+		strncat(socket_path, "/catchme/catchme-socket", 107);
+		return;
+	}
+
+	if (!getenv("HOME")) {
+		fprintf(stderr, "HOME not set.\n");
+	} else {
+		if (snprintf(databuff, DATABUF_SIZE, "%s", getenv("HOME")) >=
+		    DATABUF_SIZE) {
+			exit(1);
+		}
+		memcpy(socket_path, databuff, 108);
+		strncat(socket_path, ".config/catchme/catchme-socket", 107);
+	}
+}
+
+int main(int argc, char *argv[], char *envp[])
+{
+	find_paths();
 	for (int i = 1; i < argc; i++) {
 		if (strncmp(argv[i], "tog", 3) == 0) { // tog/toggle
 			open_socket();
@@ -679,6 +762,7 @@ int main(int argc, char *argv[])
 			cm_volume(argv[i]);
 		} else if (strncmp(argv[i], "next", 4) == 0) {
 			i++;
+			int n;
 			if (i == argc) {
 				// if no argument, next music
 				open_socket();
@@ -693,6 +777,7 @@ int main(int argc, char *argv[])
 			}
 		} else if (strncmp(argv[i], "prev", 4) == 0) { // prev/previous
 			i++;
+			int n;
 			if (i == argc) {
 				// if no argument, previous music
 				open_socket();
@@ -719,6 +804,7 @@ int main(int argc, char *argv[])
 			cm_current();
 		} else if (strncmp(argv[i], "play", 5) == 0) {
 			i++;
+			int n;
 			if (i == argc) {
 				// if no argument, unpauses
 				open_socket();
@@ -754,6 +840,7 @@ int main(int argc, char *argv[])
 			cm_mute();
 		} else if (strncmp(argv[i], "rem", 3) == 0) { // rem/remove
 			i++;
+			int n;
 			if (i == argc) {
 				fprintf(stderr,
 					"remove requires 1 parameter, none given.\n");
@@ -777,9 +864,16 @@ int main(int argc, char *argv[])
 		} else if (strncmp(argv[i], "clear", 5) == 0) {
 			open_socket();
 			cm_playlist_clear();
+		} else if (strncmp(argv[i], "obs", 3) == 0) {
+			open_socket();
+			cm_observe();
 		} else if (strncmp(argv[i], "repeat", 6) == 0) {
 			open_socket();
 			cm_repeat();
+		} else if (strncmp(argv[i], "start", 5) == 0) {
+			return cm_start(argc, argv, envp);
+		} else if (strncmp(argv[i], "stop", 5) == 0) {
+			return cm_stop();
 		} else if (strncmp(argv[i], "playlist", 5) == 0) {
 			i++;
 			open_socket();

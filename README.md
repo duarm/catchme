@@ -47,6 +47,8 @@ Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 
 ### Commands
 - **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
+- **start** - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start
+- **stop** - TODO:Kills mpv connect to catchme socket
 - **pause** - Pauses
 - **toggle** - Toggle pause
 - **seek** `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the 
@@ -89,16 +91,12 @@ $ catchme --cm write-playlist
 
 
 ## Build & Install
-The recommended way to install this package is to keep a copy of it by cloning the repository, copying
-config.def.h to config.h, and customizing it to your liking. You'll run `git pull` if you wish to update 
-to the most recent version.
-
 ### Arch
 ```shell
 $ pacman -S base-devel git mpv musl
 $ git clone https://gitlab.com/kurenaiz/catchme.git
 $ cd catchme/
-# edit config.h as specified in the Configuration section below
+# edit config.h if you so wish
 $ make && sudo make install # compile and install
 ```
 
@@ -106,39 +104,25 @@ Or
 
 ```shell
 $ yay -S catchme-git
+# OR
+$ paru -S catchme-git
 ```
 
 Or use the provided PKGBUILD.
-
 
 We have a prebuilt json-c library at lib/ for the sake of easy of building without having a runtime dependency 
 (since arch does not provide static libraries).
 
 ## Configuration
+You just need to start mpv with an ipc server, catchme provides a start script ready to use, 
+if you want to customize, checkout the step-by-step below.
+
 ### catchme
-You just need to start mpv with an ipc server, and tell catchme where's the socket file located, 
-step-by-step below.
-
-First, edit the SOCKET_FILE macro in config.h to point to the socket file which will be created by 
-mpv's ipc server. On our case, it will be located at $XDG_CONFIG_HOME/catchme/catchme-socket.
-
-If you installed from the PKGBUILD/AUR, you can skip
-this part, since the PKGBUILD already sets this up to $XDG_CONFIG_HOME/catchme/ automatically.
-
-```c
-// catchme/config.h
-
-// dont forget the quotes
-#define SOCKET_FILE "/home/USER/.config/catchme/catchme-socket"
-```
-
-There are some other options you can customize here like MAX_VOLUME, once you're finished
+There are some other options you can customize on config.h like MAX_VOLUME, once you're finished
 compile and install.
 ```shell
 $ make && sudo make install
 ```
-
-You can, alternatively, alias the catchme command with the -s flag passing the path to the socket.
 
 ### mpv
 Create a script to start the mpv server and make it executable.

@@ -20,13 +20,11 @@ pkgver() {
 prepare() {
 	cd "${srcdir}/${_pkgname}"
 	my_home="${XDG_CONFIG_HOME:-$HOME/.config}"
-	mkdir -p "$my_home/catchme"
+	mkdir -vp "$my_home/catchme"
 
 	echo "Created $my_home/catchme folder"
-	cp config.def.h config.h
-	echo "Copying config.def.h to config.h"
-	sed -i config.h -e "s|/home/sakura/.config/|$my_home|"
-	echo "Changed catchme home to '$my_home'"
+	cp -v config.def.h config.h
+	echo "Copied config.def.h to config.h"
 }
 
 build() {
@@ -38,4 +36,5 @@ package() {
 	cd "$srcdir/${_pkgname}"
 	make PREFIX="/usr" DESTDIR="$pkgdir" install
 	install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$_pkgname/LICENSE"
+	install -Dm0644 catchme.desktop $pkgdir/usr/share/applications/catchme.desktop
 }
