@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Catchme
+Exec=catchme start
