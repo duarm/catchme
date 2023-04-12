@@ -46,10 +46,7 @@ all: $(EXE)
 $(EXE): $(OBJ) | $(OUT_DIR)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-config.h:
-	cp config.def.h $@
-
-%.o: %.c config.h | $(OBJ_DIR)
+%.o: %.c | $(OBJ_DIR)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OUT_DIR):

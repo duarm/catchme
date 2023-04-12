@@ -1,5 +1,4 @@
 #include <catchme/util.h>
-#include <config.h>
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -11,6 +10,10 @@
 #include <json-c/json_object.h>
 #include <json-c/json_types.h>
 #include <json-c/json.h>
+
+#define VERSION "0.9.2"
+#define SOCKETBUF_SIZE 512
+#define DATABUF_SIZE 1024
 
 #define SCRIPT_CUSTOM_COMMAND "{ \"command\": [\"script-message\", \"%s\"] }\n"
 #define SCRIPT_CUSTOM_COMMAND_PARAMS                                           \
@@ -389,9 +392,6 @@ void cm_volume(const char *vol)
 		strncpy(volbuff, &vol[0], len);
 		volume = atoi(volbuff);
 	}
-
-	if (volume > MAX_VOLUME)
-		volume = MAX_VOLUME;
 
 	snprintf(cmdbuff, SOCKETBUF_SIZE, SET_VOLUME_MSG, volume);
 	send_to_socket(cmdbuff, cmdbuff);

@@ -18,6 +18,7 @@ find "$MUSIC_DIR" \( -name "*.mp3" \
 	exec mpv --really-quiet \
 		--volume=60 \
 		--video=no \
+		--volume-max=120 \
 		--pause \
 		--loop-playlist=inf \
 		--term-osd=no \

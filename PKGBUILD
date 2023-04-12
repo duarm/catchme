@@ -21,10 +21,7 @@ prepare() {
 	cd "${srcdir}/${_pkgname}"
 	my_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 	mkdir -vp "$my_home/catchme"
-
 	echo "Created $my_home/catchme folder"
-	cp -v config.def.h config.h
-	echo "Copied config.def.h to config.h"
 }
 
 build() {
