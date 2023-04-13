@@ -100,8 +100,8 @@ static void usage(void)
 	       "version: " VERSION "\n"
 	       "socket path: %s\n"
 	       "COMMAND\n"
-	       "	start - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start\n"
-	       "	stop - TODO:Kills mpv connect to catchme socket\n"
+	       "	start - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start or /usr/share/catchme/start (respectively)\n"
+	       "	stop - Kills mpv connect to catchme socket\n"
 	       "	play [POS] - Unpauses. if [POS], plays the music at the given POS in the playlist\n"
 	       "	pause - Pauses the currently playing song\n"
 	       "	tog - Toggle pause\n"
@@ -685,15 +685,19 @@ int cm_start(int argc, char *argv[], char *envp[])
 		// fallback to /usr/share/catchme/start
 		execve("/usr/share/catchme/start", &argv[1], envp);
 	} else {
-		printf("%s and /usr/share/catchme/start does not exist. (they should)", databuff);
+		printf("%s and /usr/share/catchme/start does not exist. (they should)",
+		       databuff);
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;
 }
 
-int cm_stop(void)
+int cm_stop(char *argv[], char *envp[])
 {
-	return EXIT_SUCCESS;
+	if(execve("/usr/bin/pkill", (char *[]){ "pkill", "-f", "mpv.*catchme-socket", NULL }, envp) == 0){
+		return EXIT_SUCCESS;
+	}
+	return EXIT_FAILURE;
 }
 
 int handle_custom_function(bool catchme, int argc, char *argv[], int index)
@@ -876,8 +880,8 @@ int main(int argc, char *argv[], char *envp[])
 			cm_repeat();
 		} else if (strncmp(argv[i], "start", 5) == 0) {
 			return cm_start(argc, argv, envp);
-		} else if (strncmp(argv[i], "stop", 5) == 0) {
-			return cm_stop();
+		} else if (strncmp(argv[i], "stop", 4) == 0) {
+			return cm_stop(argv, envp);
 		} else if (strncmp(argv[i], "playlist", 5) == 0) {
 			i++;
 			open_socket();

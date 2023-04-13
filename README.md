@@ -13,6 +13,7 @@ but you can extend its functionality through a [mpv script](https://gitlab.com/k
 ## Usage & Examples
 usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` `[-c]` COMMAND
 ```shell
+$ catchme start # executes the start script, which opens mpv
 $ catchme play 2 # changes current music to the one at index 2
 $ catchme play # unpauses
 $ catchme vol -10 # decrease volume by 10
@@ -43,12 +44,13 @@ $ tagutil $(catchme format ";path;")
 - album: Sailor Moon OST
 $ catchme format ";artist; - ;title; (;album;) [;status;]"
 Sailor Moon - La Soldier (Sailor Moon OST) [paused]
+$ catchme stop # closes mpv
 ```
 
 ### Commands
 - **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
-- **start** - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start
-- **stop** - TODO:Kills mpv connect to catchme socket
+- **start** - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start or /usr/share/catchme/start (respectively)
+- **stop** - Kills mpv connected to catchme socket
 - **pause** - Pauses
 - **toggle** - Toggle pause
 - **seek** `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the 
@@ -96,7 +98,6 @@ $ catchme --cm write-playlist
 $ pacman -S base-devel git mpv musl
 $ git clone https://gitlab.com/kurenaiz/catchme.git
 $ cd catchme/
-# edit config.h if you so wish
 $ make && sudo make install # compile and install
 ```
 
@@ -116,13 +117,6 @@ We have a prebuilt json-c library at lib/ for the sake of easy of building witho
 ## Configuration
 You just need to start mpv with an ipc server, catchme provides a start script ready to use, 
 if you want to customize, checkout the step-by-step below.
-
-### catchme
-There are some other options you can customize on config.h like MAX_VOLUME, once you're finished
-compile and install.
-```shell
-$ make && sudo make install
-```
 
 ### mpv
 Create a script to start the mpv server and make it executable.
