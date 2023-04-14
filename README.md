@@ -11,7 +11,7 @@ a command, and mpv reacts. Out of the box you have all of mpv default commands a
 but you can extend its functionality through a [mpv script](https://gitlab.com/kurenaiz/mpv-catchme) 
 
 ## Usage & Examples
-usage: catchme `[-s SOCKET_PATH]` `[-p PATHS_CACHE]` `[-n NAMES_CACHE]` `[-v]` `[-h]` `[-c]` COMMAND
+usage: catchme `[-s SOCKET_PATH]` `[-h]` `[-c]` `[--cm]` COMMAND
 ```shell
 $ catchme start # executes the start script, which opens mpv
 $ catchme play 2 # changes current music to the one at index 2
@@ -34,7 +34,7 @@ $ catchme toggle # unpauses
 $ catchme repeat # loop current music
 $ catchme repeat # stop looping
 # clears the playlist, then starts playing another playlist, then shuffle playlist, then write to names/paths file
-$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme -c write-playlist
+$ catchme clear && catchme playlist /home/sakura/music/ && catchme shuff && catchme --cm write-playlist
 $ tagutil $(catchme format ";path;")
 # /home/sakura/music/sailor_moon/La_Soldier.opus
 ---
@@ -44,6 +44,12 @@ $ tagutil $(catchme format ";path;")
 - album: Sailor Moon OST
 $ catchme format ";artist; - ;title; (;album;) [;status;]"
 Sailor Moon - La Soldier (Sailor Moon OST) [paused]
+$ catchme curr
+Sailor Moon - La Soldier
+$ catchme status
+Sailor Moon - La Soldier (Sailor Moon OST)
+[playing] #212/614 0.00/0.00 (12%)
+speed: 1.00x volume: 60% muted: 0 loop: no
 $ catchme stop # closes mpv
 ```
 
