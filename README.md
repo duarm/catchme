@@ -47,43 +47,13 @@ Sailor Moon - La Soldier (Sailor Moon OST) [paused]
 $ catchme stop # closes mpv
 ```
 
-### Commands
-- **start** - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start or /usr/share/catchme/start (respectively)
-- **stop** - Kills mpv connected to catchme socket
-- **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
-- **pause** - Pauses
-- **toggle** - Toggle pause
-- **seek** `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the 
-current music, you can also put
-  at the end to seek to that percentage
-- **vol/volume** `[+/-]VOL` - Increments `[+]`, decrements `[-]` or sets the absolute value of volume
-- **current/curr** - Returns the artist and title of the current song in the ;artist; - ;title;" format,
-if any of those metadatas are missing
-  returns the filename instead.
-- **next [N]** - Play next music, if N is specified, jump to N songs ahead
-- **previous/prev** [N] - Play the previous song, if N is specified, jump to N songs behind
-- **playlist** FILE/PATH - REPLACES the current playlist with the one from the given PATH or FILE
-. If no PATH/FILE given, print playlist
-- **mute** - Toggle mute
-- **repeat** - Toggle repeat current music
-- **add** FILE/PATHS - Appends each file, or file containing a list of files, to the playlist
-- **remove** POS - Removes the music at the given POS from the playlist
-- **shuffle/shuf** - Shuffles the playlist
-- **status** - Returns a status list of the current music
-- **format** ";FORMAT;" - Returns the string formatted accordingly, with information from the currently
-playing music (see Format below)
-- **clear** - Clears the playlist
-- **CUSTOMCOMMANDS** - (see Custom Commands below)
-
 ### Perks
-Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, vol=volume, play=play,
+- Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, vol=volume, play=play,
 playl=playlist
 
+- `catchme start` forwards all parameters to mpv, so you can do something like `catchme start --volume=10 --af="lavfi=[loudnorm=I=-16:TP=-3:LRA=4]"` and it will work.
 
-`catchme start` forwards all parameters to mpv, so you can do something like `catchme start --volume=10 --af="lavfi=[loudnorm=I=-16:TP=-3:LRA=4]"` and it will work.
-
-
-Catchme can execute multiple commands in one call, they happen in order. e.g. `catchme seek 50% toggle` is equivalent to `catchme seek 50% && catchme toggle`
+- Catchme can execute multiple commands in one call, they happen in order. e.g. `catchme seek 50% toggle` is equivalent to `catchme seek 50% && catchme toggle`
 
 ### Format
 title, artist, album, album-artist,
@@ -153,7 +123,7 @@ mpv --really-quiet --video=no --idle=yes --load-scripts=no \
         /path/to/my/musics
 ```
 
-You can also forward options to the script when starting the server through `catchme start`, so if you place "$@" like the script above, you can do this:
+Catchme forwards all parameters to the script when starting the server through `catchme start`, so if you place "$@" like the script above, you can do this:
 ```shell
 $ catchme start --shuffle --volume=70
 ```
