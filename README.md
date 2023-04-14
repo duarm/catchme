@@ -48,9 +48,9 @@ $ catchme stop # closes mpv
 ```
 
 ### Commands
-- **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
 - **start** - Executes the script at $XDG_CONFIG_HOME/catchme/start or $HOME/.config/catchme/start or /usr/share/catchme/start (respectively)
 - **stop** - Kills mpv connected to catchme socket
+- **play** [POS] - Unpauses, if POS is specified, plays the music at the given POS in the playlist.
 - **pause** - Pauses
 - **toggle** - Toggle pause
 - **seek** `[+/-]TIME[%]` - Increments `[+]`, decrements `[-]` or sets the absolute time of the 
@@ -75,8 +75,15 @@ playing music (see Format below)
 - **clear** - Clears the playlist
 - **CUSTOMCOMMANDS** - (see Custom Commands below)
 
+### Perks
 Partial commands are valid as long they're not ambiguous, e.g. shuf=shuffle, vol=volume, play=play,
 playl=playlist
+
+
+`catchme start` forwards all parameters to mpv, so you can do something like `catchme start --volume=10 --af="lavfi=[loudnorm=I=-16:TP=-3:LRA=4]"` and it will work.
+
+
+Catchme can execute multiple commands in one call, they happen in order. e.g. `catchme seek 50% toggle` is equivalent to `catchme seek 50% && catchme toggle`
 
 ### Format
 title, artist, album, album-artist,
@@ -95,6 +102,7 @@ $ catchme --cm write-playlist
 ## Build & Install
 ### Arch
 ```shell
+# make method
 $ pacman -S base-devel git mpv musl
 $ git clone https://gitlab.com/kurenaiz/catchme.git
 $ cd catchme/
@@ -104,15 +112,23 @@ $ make && sudo make install # compile and install
 Or
 
 ```shell
+# PKGBUILD method
+$ git clone https://gitlab.com/kurenaiz/catchme.git
+$ cd catchme/
+$ makepkg -si
+```
+
+Or
+
+```shell
+# AUR method
 $ yay -S catchme-git
 # OR
 $ paru -S catchme-git
 ```
 
-Or use the provided PKGBUILD.
-
 We have a prebuilt json-c library at lib/ for the sake of easy of building without having a runtime dependency 
-(since arch does not provide static libraries).
+(since arch does not provide static libraries), I might want to switch to json.h later.
 
 ## Configuration
 You just need to start mpv with an ipc server, catchme provides a start script ready to use, 
@@ -132,15 +148,19 @@ You can customize this script to reflect the start state of your mpv server.
 mpv --really-quiet --video=no --idle=yes --load-scripts=no \
         --pause \ 
         --input-ipc-server=$XDG_CONFIG_HOME/catchme/catchme-socket \
+        "$@" \
         --loop-playlist=inf 
         /path/to/my/musics
 ```
 
+You can also forward options to the script when starting the server through `catchme start`, so if you place "$@" like the script above, you can do this:
+```shell
+$ catchme start --shuffle --volume=70
+```
+
 Use your scripting power to do cool stuff.
 
-Now just execute this file to start the server, place this on your start script to auto run when booting up.
-
-See wiki section for Quirks, Why ";" for format, Todo, and more.
+See wiki section for Quirks, Todo, and more.
 
 ### Extensions
 [catchmenu](https://gitlab.com/kurenaiz/catchmenu) - dmenu script for selecting music

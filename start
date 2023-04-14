@@ -5,7 +5,15 @@
 MUSIC_DIR="$XDG_MUSIC_DIR"
 CATCHME_SOCKET_PATH="${XDG_CONFIG_HOME:-$HOME/.config}/catchme/catchme-socket"
 
+## Interesting mpv flags to add:
+## add these alongisde mpv exec call below
+
+# Enables auto-load extension
 # --script="$XDG_CONFIG_HOME/mpv/scripts/scripts.disable/autoload.lua" \
+
+# Volume normalization
+# --af="lavfi=[loudnorm=I=-16:TP=-3:LRA=4]" \
+
 pkill -f "mpv.*catchme-socket"
 find "$MUSIC_DIR" \( -name "*.mp3" \
 	-o -name "*.mkv" \
@@ -16,7 +24,7 @@ find "$MUSIC_DIR" \( -name "*.mp3" \
 	! -path "sounds" \
 	-type f |
 	exec mpv --really-quiet \
-		--volume=60 \
+		--volume=70 \
 		--video=no \
 		--volume-max=120 \
 		--pause \
@@ -27,4 +35,5 @@ find "$MUSIC_DIR" \( -name "*.mp3" \
 		--load-scripts=no \
 		--script="$XDG_CONFIG_HOME/mpv/scripts/scripts.disable/mpv-catchme/" \
 		--input-ipc-server="$CATCHME_SOCKET_PATH" \
+		"$@" \
 		--playlist=- >/dev/null 2>&1 &
