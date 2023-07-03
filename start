@@ -23,6 +23,7 @@ find "$MUSIC_DIR" \( -name "*.mp3" \
 	-o -name "*.opus" \) \
 	! -path "sounds" \
 	-type f |
+	sort -R |
 	exec mpv --really-quiet \
 		--volume=70 \
 		--video=no \
@@ -32,7 +33,6 @@ find "$MUSIC_DIR" \( -name "*.mp3" \
 		--loop-playlist=inf \
 		--term-osd=no \
 		--idle=yes \
-		--shuffle \
 		--load-scripts=no \
 		--script="$XDG_CONFIG_HOME/mpv/scripts/scripts.disable/mpv-catchme/" \
 		--input-ipc-server="$CATCHME_SOCKET_PATH" \
